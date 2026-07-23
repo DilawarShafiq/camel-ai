@@ -70,6 +70,21 @@ camel whatsapp connect    # chat with Camel AI from your phone (experimental)
 You paste one free API key; you never touch Python or a terminal beyond the
 install line. Advanced users can still `pip install "camel-ai[desktop,vision]"`.
 
+### Enterprise / scaling install (Docker)
+
+For teams, CI, and servers — a reproducible, versioned container (no
+build-from-source on each machine):
+
+```bash
+docker run -p 8765:8765 ghcr.io/dilawarshafiq/camel-ai:latest        # dashboard
+docker run ghcr.io/dilawarshafiq/camel-ai audit https://mysite.com  # one-off audit
+```
+
+The image (see `Dockerfile`) ships the browser engine baked in and runs the web,
+vision, dashboard, scheduler, and MCP features headless — ideal for CI gates and
+scheduled runs. Published to GHCR on every release. *(Native desktop automation
+is Windows-only and not in the Linux image.)*
+
 ## CLI
 
 ```bash
