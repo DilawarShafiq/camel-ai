@@ -1,0 +1,12 @@
+.venv/
+.git/
+dist/
+build/
+*.egg-info/
+__pycache__/
+docs/assets/
+.wa_profile/
+.camel/
+camel-report.html
+*.png
+*.gif

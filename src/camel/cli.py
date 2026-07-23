@@ -291,7 +291,8 @@ def _cmd_daemon(args: argparse.Namespace) -> int:
 
 def _cmd_dashboard(args: argparse.Namespace) -> int:
     from .dashboard import serve
-    serve(port=args.port, open_browser=not args.no_open)
+    serve(host=getattr(args, "host", "127.0.0.1"), port=args.port,
+          open_browser=not args.no_open)
     return 0
 
 
@@ -385,6 +386,7 @@ def build_parser() -> argparse.ArgumentParser:
     dm.set_defaults(fn=_cmd_daemon)
 
     dash = sub.add_parser("dashboard", help="open the web dashboard (enterprise UI)")
+    dash.add_argument("--host", default="127.0.0.1", help="bind host (0.0.0.0 in a container)")
     dash.add_argument("--port", type=int, default=8765)
     dash.add_argument("--no-open", action="store_true", help="don't auto-open the browser")
     dash.set_defaults(fn=_cmd_dashboard)
