@@ -237,6 +237,12 @@ def _cmd_app(_: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_dashboard(args: argparse.Namespace) -> int:
+    from .dashboard import serve
+    serve(port=args.port, open_browser=not args.no_open)
+    return 0
+
+
 def _cmd_see(_: argparse.Namespace) -> int:
     """See what the user sees: every open window + a full-screen screenshot.
     Uses the vision + desktop drivers, so it covers the browser AND native apps,
@@ -298,6 +304,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("app", help="open the desktop window").set_defaults(fn=_cmd_app)
     sub.add_parser("see", help="show every window + screenshot what you see").set_defaults(fn=_cmd_see)
+
+    dash = sub.add_parser("dashboard", help="open the web dashboard (enterprise UI)")
+    dash.add_argument("--port", type=int, default=8765)
+    dash.add_argument("--no-open", action="store_true", help="don't auto-open the browser")
+    dash.set_defaults(fn=_cmd_dashboard)
     sub.add_parser("server", help="run the MCP server (stdio)").set_defaults(fn=_cmd_server)
     sub.add_parser("doctor", help="check the environment").set_defaults(fn=_cmd_doctor)
     sub.add_parser("mcp-config", help="print MCP client config snippet").set_defaults(fn=_cmd_mcp_config)
