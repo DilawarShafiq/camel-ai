@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 Write-Host ""
 Write-Host "  Installing Camel AI ..." -ForegroundColor Cyan
 
-$spec = "camelai[desktop,vision] @ git+https://github.com/DilawarShafiq/camel-ai"
+$spec = "aicamel[desktop,vision] @ git+https://github.com/DilawarShafiq/camel-ai"
 $binDir = Join-Path $env:USERPROFILE ".local\bin"
 
 # 1. Ensure Python

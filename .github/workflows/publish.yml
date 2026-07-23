@@ -1,10 +1,10 @@
 name: Publish to PyPI
-# Publishes the `camelai` package to PyPI. Manual trigger so it only runs once
-# you've set up PyPI Trusted Publishing for this repo:
+# Publishes the `aicamel` package to PyPI. Manual trigger — run it once you've set
+# up PyPI Trusted Publishing for this repo:
 #   https://pypi.org/manage/account/publishing/
-#   PyPI project: camelai · Owner: DilawarShafiq · Repo: camel-ai
-#   Workflow: publish.yml · Environment: (leave blank)
-# After that, run this workflow to publish. Then: pip install camelai
+#   PyPI project: aicamel · Owner: DilawarShafiq · Repo: camel-ai
+#   Workflow: publish.yml · Environment: pypi
+# After that, run this workflow to publish. Then: pip install aicamel
 on:
   workflow_dispatch:
 

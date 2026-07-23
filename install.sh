@@ -8,7 +8,7 @@ set -euo pipefail
 echo ""
 echo "  Installing Camel AI ..."
 
-SPEC="camelai[vision] @ git+https://github.com/DilawarShafiq/camel-ai"
+SPEC="aicamel[vision] @ git+https://github.com/DilawarShafiq/camel-ai"
 
 # 1. Ensure Python 3
 if ! command -v python3 >/dev/null 2>&1; then
