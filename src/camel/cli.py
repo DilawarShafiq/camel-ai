@@ -237,6 +237,36 @@ def _cmd_app(_: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_jobs(args: argparse.Namespace) -> int:
+    from . import scheduler
+    if args.jobs_cmd == "add":
+        j = scheduler.add_job(args.task, kind=args.kind, every=args.every, at=args.at)
+        print(f"Added {j['id']}: {j['kind']} '{j['task']}' every {j['every']} at {j['at']}")
+    elif args.jobs_cmd == "remove":
+        print("Removed." if scheduler.remove_job(args.id) else "No such job.")
+    else:  # list
+        jobs = scheduler.list_jobs()
+        if not jobs:
+            print("No scheduled jobs. Add one:\n  camel jobs add --kind audit "
+                  "'https://mysite.com' --at 09:00")
+        for j in jobs:
+            state = "on" if j["enabled"] else "off"
+            print(f"  {j['id']} [{state}] {j['kind']} "
+                  f"'{j['task']}' every {j['every']} at {j['at']} "
+                  f"(last: {j['last_run'] or 'never'})")
+    return 0
+
+
+def _cmd_daemon(args: argparse.Namespace) -> int:
+    from . import scheduler
+    import asyncio as _a
+    try:
+        _a.run(scheduler.run_forever(interval_seconds=args.interval))
+    except KeyboardInterrupt:
+        print("\n  daemon stopped.")
+    return 0
+
+
 def _cmd_dashboard(args: argparse.Namespace) -> int:
     from .dashboard import serve
     serve(port=args.port, open_browser=not args.no_open)
@@ -304,6 +334,22 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("app", help="open the desktop window").set_defaults(fn=_cmd_app)
     sub.add_parser("see", help="show every window + screenshot what you see").set_defaults(fn=_cmd_see)
+
+    jb = sub.add_parser("jobs", help="schedule autonomous recurring jobs")
+    jbs = jb.add_subparsers(dest="jobs_cmd")
+    ja = jbs.add_parser("add", help="add a recurring job")
+    ja.add_argument("task", help="a URL (kind=audit) or a goal (kind=goal)")
+    ja.add_argument("--kind", choices=["audit", "goal"], default="audit")
+    ja.add_argument("--every", choices=["day", "hour"], default="day")
+    ja.add_argument("--at", default="09:00", help="HH:MM for daily jobs")
+    jbs.add_parser("list", help="list jobs")
+    jr = jbs.add_parser("remove", help="remove a job")
+    jr.add_argument("id")
+    jb.set_defaults(fn=_cmd_jobs, jobs_cmd="list")
+
+    dm = sub.add_parser("daemon", help="run scheduled jobs autonomously")
+    dm.add_argument("--interval", type=int, default=60, help="check interval (s)")
+    dm.set_defaults(fn=_cmd_daemon)
 
     dash = sub.add_parser("dashboard", help="open the web dashboard (enterprise UI)")
     dash.add_argument("--port", type=int, default=8765)
