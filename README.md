@@ -23,6 +23,20 @@ Two ways to drive it, sharing one LLM-agnostic core:
 2. **Any-LLM agent** — point your own model (OpenAI, Ollama, LM Studio, vLLM,
    Groq, …) at it via a tiny `LLMProvider` interface.
 
+## See it
+
+**It automates a login by itself** (types the credentials, clicks in, lands on the app):
+
+![Camel AI automating a login](docs/assets/demo-login.gif)
+
+**Enterprise dashboard** (`camel dashboard`) — audit sites, see findings, use your logged-in browser:
+
+![Camel AI dashboard](docs/assets/dashboard.png)
+
+**Every run produces a fix-brief** your AI coder can act on:
+
+![Camel AI audit report](docs/assets/report.png)
+
 ## Install (one line) + connect a free brain
 
 **Windows**
