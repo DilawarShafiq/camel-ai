@@ -208,8 +208,11 @@ def _cmd_mcp_config(_: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    from . import __version__
     p = argparse.ArgumentParser(prog="camel",
                                 description="AI-driven UI/UX automation & testing.")
+    p.add_argument("-V", "--version", action="version",
+                   version=f"camel {__version__}")
     sub = p.add_subparsers(dest="cmd")
 
     st = sub.add_parser("setup", help="first-run wizard: connect your AI brain")
