@@ -68,7 +68,17 @@ camel whatsapp connect    # chat with Camel AI from your phone (experimental)
 ```
 
 You paste one free API key; you never touch Python or a terminal beyond the
-install line. Advanced users can still `pip install "aicamel[desktop,vision]"`.
+install line.
+
+### Standard install (PyPI)
+
+Camel AI is published on PyPI as **`aicamel`**:
+
+```bash
+pip install "aicamel[desktop,vision]"    # or: pipx install / uv tool install
+python -m playwright install chromium
+camel setup
+```
 
 ### Enterprise / scaling install (Docker)
 
