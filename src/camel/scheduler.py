@@ -56,6 +56,18 @@ def remove_job(job_id: str) -> bool:
     return len(new) != len(jobs)
 
 
+def set_enabled(job_id: str, enabled: bool) -> bool:
+    """Pause or resume a job without deleting it."""
+    jobs = _load()
+    found = False
+    for j in jobs:
+        if j["id"] == job_id:
+            j["enabled"] = enabled
+            found = True
+    _save(jobs)
+    return found
+
+
 def _parse_at(at: str) -> dtime:
     h, m = (at.split(":") + ["0"])[:2]
     return dtime(int(h), int(m))
