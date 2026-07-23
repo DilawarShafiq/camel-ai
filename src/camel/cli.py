@@ -212,7 +212,12 @@ def _cmd_setup(args: argparse.Namespace) -> int:
                              base_url=base_url)
     print(f"\n  ✓ Brain set: {brain['provider']} · {brain['model']}")
     print(f"  ✓ Saved to {config.CONFIG_PATH}")
-    print("\n  Try it:  camel run \"audit every button on https://example.com\"\n")
+    print("\n  Opening your dashboard...\n")
+    try:
+        from .dashboard import serve
+        serve()  # blocks; this is the finish line of first-run setup
+    except Exception:
+        print("  Run `camel dashboard` to open the app.")
     return 0
 
 
@@ -407,12 +412,13 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     if not getattr(args, "cmd", None):
-        # Bare `camel`: first run -> setup wizard; afterwards -> desktop app.
+        # Bare `camel`: first run -> setup wizard; afterwards -> the dashboard.
         # (MCP clients launch `camel server` explicitly.)
         from . import config
         if not config.is_configured():
             sys.exit(_cmd_setup(args))
-        _cmd_app(args)
+        from .dashboard import serve
+        serve()
         return
     sys.exit(args.fn(args))
 

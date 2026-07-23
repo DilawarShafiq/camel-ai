@@ -56,6 +56,31 @@ async def _audit(request):
     })
 
 
+async def _run(request):
+    body = await request.json()
+    goal = (body.get("goal") or "").strip()
+    if not goal:
+        return JSONResponse({"error": "Enter a goal"}, status_code=400)
+    if not config.is_configured():
+        return JSONResponse({"error": "Connect a brain first (camel setup)"}, status_code=400)
+    from .agent import provider_from_config, run_audit
+    text = await run_audit(provider_from_config(), goal, headless=False)
+    return JSONResponse({"result": text})
+
+
+async def _jobs(request):
+    from . import scheduler
+    if request.method == "POST":
+        body = await request.json()
+        action = body.get("action")
+        if action == "add":
+            scheduler.add_job(body["task"], kind=body.get("kind", "audit"),
+                              every=body.get("every", "day"), at=body.get("at", "09:00"))
+        elif action == "remove":
+            scheduler.remove_job(body["id"])
+    return JSONResponse({"jobs": scheduler.list_jobs()})
+
+
 async def _see(request):
     out = {"windows": [], "screen": None}
     try:
@@ -77,6 +102,8 @@ app = Starlette(routes=[
     Route("/", _home),
     Route("/api/status", _status),
     Route("/api/audit", _audit, methods=["POST"]),
+    Route("/api/run", _run, methods=["POST"]),
+    Route("/api/jobs", _jobs, methods=["GET", "POST"]),
     Route("/api/see", _see),
 ])
 
@@ -136,6 +163,22 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
   <p style="margin-top:1rem"><a id="full" href="#" target="_blank">Open full report ↗</a></p>
  </div>
  <div class="card">
+  <h2>Do a task (plain English)</h2>
+  <input type="text" id="goal" placeholder="log into my portal and download this month's invoices">
+  <div class="row"><button id="dorun">▶ Run task</button><span id="runstatus" class="spin"></span></div>
+  <div id="runout" class="meta" style="margin-top:.6rem;white-space:pre-wrap"></div>
+ </div>
+ <div class="card">
+  <h2>Scheduled jobs</h2>
+  <div class="row">
+   <input type="text" id="jtask" placeholder="https://mysite.com" style="flex:2;min-width:180px">
+   <input type="text" id="jat" placeholder="09:00" value="09:00" style="width:80px">
+   <button id="jadd">+ Add daily</button>
+  </div>
+  <div id="joblist" style="margin-top:.7rem"></div>
+  <p class="meta">Run <code>camel daemon</code> in a terminal to execute jobs unattended.</p>
+ </div>
+ <div class="card">
   <h2>See what's on your screen</h2>
   <div class="row"><button class="ghost" id="seebtn">👁 See my windows</button><span id="screen" class="meta"></span></div>
   <div id="wins"></div>
@@ -164,6 +207,22 @@ document.getElementById('run').onclick=async()=>{
   st.textContent='Done.';
  }catch(e){st.textContent='Error: '+e;} finally{document.getElementById('run').disabled=false;}
 };
+document.getElementById('dorun').onclick=async()=>{
+ const goal=document.getElementById('goal').value; const st=document.getElementById('runstatus');
+ if(!goal){st.textContent='Enter a task';return;} st.textContent='Working…'; document.getElementById('dorun').disabled=true;
+ try{const r=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({goal})});
+  const d=await r.json(); document.getElementById('runout').textContent=d.error||d.result||''; st.textContent=d.error?'':'Done.';
+ }catch(e){st.textContent='Error: '+e;} finally{document.getElementById('dorun').disabled=false;}
+};
+async function loadJobs(){const r=await fetch('/api/jobs');const d=await r.json();const el=document.getElementById('joblist');el.innerHTML='';
+ (d.jobs||[]).forEach(j=>{const row=document.createElement('div');row.className='win';
+  row.innerHTML=`• <b>${j.id}</b> ${j.kind} "${j.task}" @ ${j.at} <a href="#" data-id="${j.id}" style="margin-left:.5rem">remove</a>`;
+  row.querySelector('a').onclick=async(e)=>{e.preventDefault();await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'remove',id:j.id})});loadJobs();};
+  el.appendChild(row);});}
+document.getElementById('jadd').onclick=async()=>{const task=document.getElementById('jtask').value;const at=document.getElementById('jat').value||'09:00';
+ if(!task)return; await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',task,kind:'audit',every:'day',at})});
+ document.getElementById('jtask').value=''; loadJobs();};
+loadJobs();
 document.getElementById('seebtn').onclick=async()=>{
  const r=await fetch('/api/see');const d=await r.json();
  document.getElementById('screen').textContent=d.screen?('screen '+d.screen):'';
