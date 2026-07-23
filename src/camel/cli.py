@@ -237,6 +237,31 @@ def _cmd_app(_: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_see(_: argparse.Namespace) -> int:
+    """See what the user sees: every open window + a full-screen screenshot.
+    Uses the vision + desktop drivers, so it covers the browser AND native apps,
+    dialogs, and pop-ups on screen."""
+    print("What's on your screen right now:\n")
+    try:
+        from .vision import VisionSession
+        shot = VisionSession().screenshot()
+        print(f"  Screen: {shot['screen_width']}x{shot['screen_height']}")
+        print(f"  Full screenshot saved: {shot['path']}")
+    except Exception as e:
+        print(f"  (screenshot unavailable: {e})")
+    try:
+        from .desktop import DesktopSession
+        wins = DesktopSession().list_windows()
+        print(f"\n  Open windows ({len(wins)}):")
+        for w in wins:
+            if w.get("title"):
+                print(f"    - {w['title']}")
+    except Exception as e:
+        print(f"\n  (window list is Windows-only / needs the 'desktop' extra: {e})")
+    print("\n  Camel AI can act on any of these — browser, native apps, or pop-ups.")
+    return 0
+
+
 def _cmd_mcp_config(_: argparse.Namespace) -> int:
     cfg = {"mcpServers": {"camel": {"command": "camel", "args": ["server"]}}}
     print(json.dumps(cfg, indent=2))
@@ -272,6 +297,7 @@ def build_parser() -> argparse.ArgumentParser:
     lg.set_defaults(fn=_cmd_login)
 
     sub.add_parser("app", help="open the desktop window").set_defaults(fn=_cmd_app)
+    sub.add_parser("see", help="show every window + screenshot what you see").set_defaults(fn=_cmd_see)
     sub.add_parser("server", help="run the MCP server (stdio)").set_defaults(fn=_cmd_server)
     sub.add_parser("doctor", help="check the environment").set_defaults(fn=_cmd_doctor)
     sub.add_parser("mcp-config", help="print MCP client config snippet").set_defaults(fn=_cmd_mcp_config)
