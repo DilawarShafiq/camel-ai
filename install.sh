@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # camel one-line installer (macOS / Linux)
-#   curl -fsSL https://raw.githubusercontent.com/DilawarShafiq/camel/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/DilawarShafiq/camel-ai/main/install.sh | bash
 #
 # Installs camel, its browser engine, and launches the setup wizard.
 set -euo pipefail
@@ -24,7 +24,7 @@ fi
 
 # 3. Install camel (vision extra; desktop UIA is Windows-only). Installed
 #    straight from GitHub so it works the moment the repo is public — no PyPI.
-pipx install "camel[vision] @ git+https://github.com/DilawarShafiq/camel" --force
+pipx install "camel-ai[vision] @ git+https://github.com/DilawarShafiq/camel-ai" --force
 
 # 4. Browser engine
 python3 -m playwright install chromium

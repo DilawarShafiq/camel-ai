@@ -1,8 +1,12 @@
-# Camel
+# Camel AI
+
+![CI](https://github.com/DilawarShafiq/camel-ai/actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 
 **Automate and test any software through its real UI — no target-app API needed.**
 
-camel drives software the way a human does: clicking, typing, and reading the
+Camel AI drives software the way a human does: clicking, typing, and reading the
 screen. Web apps via Playwright, native Windows apps via UI Automation, and
 anything else via vision (screenshot + coordinate clicks). It audits UI/UX
 (dead buttons, console errors, broken flows) and automates goal-driven tasks.
@@ -23,11 +27,11 @@ Two ways to drive it, sharing one LLM-agnostic core:
 
 **Windows**
 ```powershell
-irm https://raw.githubusercontent.com/DilawarShafiq/camel/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/DilawarShafiq/camel-ai/main/install.ps1 | iex
 ```
 **macOS / Linux**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/DilawarShafiq/camel/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/DilawarShafiq/camel-ai/main/install.sh | bash
 ```
 
 The installer sets everything up (Python, the browser engine) and launches a
@@ -44,7 +48,7 @@ camel audit https://mysite.com        # a full UI/UX test → HTML report (no br
 ```
 
 You paste one free API key; you never touch Python or a terminal beyond the
-install line. Advanced users can still `pip install "camel[desktop,vision]"`.
+install line. Advanced users can still `pip install "camel-ai[desktop,vision]"`.
 
 ## CLI
 
@@ -151,7 +155,7 @@ that runs in a browser, on any OS.
 Install the extras you need:
 
 ```bash
-pip install 'camel[desktop,vision]'      # Windows desktop + universal fallback
+pip install 'camel-ai[desktop,vision]'      # Windows desktop + universal fallback
 ```
 
 | Driver | Reaches | How it "sees" | Reliability |

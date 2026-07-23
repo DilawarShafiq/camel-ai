@@ -1,5 +1,5 @@
 [project]
-name = "camel"
+name = "camel-ai"
 version = "0.0.1"
 description = "AI-driven UI/UX automation & testing. Drives any software through its real UI (web, desktop, or pixels) — no target-app API required."
 readme = "README.md"
@@ -45,8 +45,8 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [project.urls]
-Homepage = "https://github.com/DilawarShafiq/camel"
-Issues = "https://github.com/DilawarShafiq/camel/issues"
+Homepage = "https://github.com/DilawarShafiq/camel-ai"
+Issues = "https://github.com/DilawarShafiq/camel-ai/issues"
 
 [project.scripts]
 camel = "camel.cli:main"

@@ -1,5 +1,5 @@
 # camel one-line installer (Windows)
-#   irm https://raw.githubusercontent.com/DilawarShafiq/camel/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/DilawarShafiq/camel-ai/main/install.ps1 | iex
 #
 # Installs camel, its browser engine, and launches the setup wizard.
 # No prior Python/terminal knowledge needed beyond running this one line.
@@ -22,7 +22,7 @@ python -m pipx ensurepath | Out-Null
 
 # 3. Install camel with desktop + vision extras (straight from GitHub, so it
 #    works the moment the repo is public — no PyPI needed for launch).
-python -m pipx install "camel[desktop,vision] @ git+https://github.com/DilawarShafiq/camel" --force
+python -m pipx install "camel-ai[desktop,vision] @ git+https://github.com/DilawarShafiq/camel-ai" --force
 
 # 4. Install the browser engine
 camel doctor *> $null
