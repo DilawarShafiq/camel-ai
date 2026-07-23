@@ -22,9 +22,12 @@ NOT need the target app's API; you drive its UI.
 2. `snapshot` first to see what's actually on screen before acting.
 3. Act one step at a time; re-`snapshot` to confirm each action did what you
    expected (navigation, dialog, DOM change).
-4. Never type 2FA codes, solve CAPTCHAs, or guess credentials. When you hit one,
-   call `wait_for_login` with a success condition and let the human finish in the
-   visible window; then continue.
+4. **Login walls:** call `detect_login` when a page might require sign-in. If it
+   is a login wall, **do NOT click "Sign in" more than once** — stop, tell the
+   user you need them to log in, and call `wait_for_login` with a success
+   condition so they complete the sign-in and any 2FA themselves in the open
+   window. Then continue. Never type 2FA codes, solve CAPTCHAs, or guess
+   credentials. Repeatedly clicking sign-in can lock the account.
 5. Run `audit_interactivity` to catch dead buttons, and `get_console_errors` to
    catch silent failures a human would miss.
 

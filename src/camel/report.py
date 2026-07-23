@@ -11,6 +11,7 @@ _OUTCOME_LABEL = {
     "dom_changed": ("✅", "Changed the page"),
     "no_effect": ("⚠️", "No visible effect (possible dead control)"),
     "not_actionable": ("⛔", "Could not click"),
+    "skipped_login": ("🔒", "Login control — skipped (sign in yourself)"),
 }
 
 

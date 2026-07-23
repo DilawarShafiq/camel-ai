@@ -143,12 +143,29 @@ class Session:
         navigated, mutated the DOM, opened a dialog/modal, or was a dead control.
         This is the objective backbone of UX testing; the LLM reasons over it."""
         assert self.page
+        # Give single-page apps a moment to render (login forms, dashboards, and
+        # controls often appear a beat after the initial load).
+        await self.page.wait_for_timeout(700)
         elements = await self.page.evaluate(_INTERACTIVE_JS)
         results: list[dict[str, Any]] = []
         home = self.page.url
 
+        # If this is a login/auth wall, do NOT hammer the sign-in button — a real
+        # human has to enter credentials + 2FA. We skip those controls (recording
+        # them) and flag the wall so the caller can pause via wait_for_login.
+        login = await self.page.evaluate(_LOGIN_JS)
+        login_wall = bool(login.get("isLogin"))
+
         for el in elements[:max_elements]:
             sel = el["selector"]
+            label_l = (el.get("label", "") or "").lower()
+            if login_wall and any(k in label_l for k in _AUTH_KEYWORDS):
+                results.append({
+                    "label": el.get("label", ""), "role": el.get("role", ""),
+                    "selector": sel, "outcome": "skipped_login",
+                    "note": "login control — not clicked; sign in yourself, then "
+                            "re-run (use wait_for_login to pause for you)"})
+                continue
             # Reset to a clean baseline before EVERY control, so one click's
             # side effects (an open modal, appended DOM) can't corrupt the next
             # verdict. This is what makes per-control results trustworthy.
@@ -195,11 +212,27 @@ class Session:
             })
 
         dead = [r for r in results if r["outcome"] == "no_effect"]
-        return {
+        out: dict[str, Any] = {
             "tested": len(results),
             "dead_controls": len(dead),
             "results": results,
+            "login_wall": login_wall,
         }
+        if login_wall:
+            out["message"] = (
+                "This looks like a login/authentication page. Sign-in controls "
+                "were NOT clicked. To audit the app behind the login, call "
+                "wait_for_login and complete the sign-in (and any 2FA) yourself "
+                "in the open browser, then run the audit again on the "
+                "logged-in page.")
+        return out
+
+    async def detect_login(self) -> dict[str, Any]:
+        """Report whether the current page is a login/auth wall, and why. Use
+        this to decide when to pause for the human (wait_for_login) instead of
+        clicking sign-in controls."""
+        assert self.page
+        return await self.page.evaluate(_LOGIN_JS)
 
     async def check_accessibility(self) -> dict[str, Any]:
         """Flag common accessibility / UX defects a careful reviewer would catch,
@@ -222,6 +255,28 @@ _STATE_JS = r"""
   elements: document.getElementsByTagName('*').length,
   len: document.body ? document.body.innerHTML.length : 0,
 })
+"""
+
+# Control labels we must never auto-click on a login wall — a human signs in.
+_AUTH_KEYWORDS = ("sign in", "signin", "sign-in", "log in", "login", "log-in",
+                  "continue with", "sign in with", "authenticate", "sso")
+
+# Detect a login / authentication wall so we pause for the human instead of
+# clicking sign-in over and over.
+_LOGIN_JS = r"""
+() => {
+  const hasPassword = !!document.querySelector('input[type=password]');
+  const url = location.href.toLowerCase();
+  const urlHint = /login|signin|sign-in|auth|sso|account|session/.test(url);
+  const authControls = [];
+  document.querySelectorAll('button, a[href], [role=button], input[type=submit]').forEach(el => {
+    const t = (el.getAttribute('aria-label') || el.innerText || el.value || '').trim().toLowerCase();
+    if (/(sign\s?-?in|log\s?-?in|continue with|sign in with|authenticate|\bsso\b)/.test(t))
+      authControls.push(t.slice(0, 30));
+  });
+  const isLogin = hasPassword || (urlHint && authControls.length > 0);
+  return { isLogin, hasPassword, urlHint, authControls: authControls.slice(0, 6) };
+}
 """
 
 # Dependency-free accessibility/UX checks. Mirrors the highest-signal rules from

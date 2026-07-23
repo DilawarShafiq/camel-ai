@@ -117,7 +117,12 @@ async def run_audit(provider: LLMProvider, goal: str, *, headless: bool = False,
         {"role": "system", "content":
             "You are a UI/UX tester. Use the tools to open the app, inspect it, "
             "and audit interactivity. Report broken buttons, console errors, and "
-            "UX issues plainly. When done, reply with a final summary and no tool call."},
+            "UX issues plainly. "
+            "IMPORTANT: if you hit a login/sign-in page (a password field or a "
+            "'Sign in' button), do NOT click sign-in repeatedly. Stop, tell the "
+            "user you need them to sign in, and wait for the human to complete "
+            "the login and any 2FA before continuing. Never invent credentials. "
+            "When done, reply with a final summary and no tool call."},
         {"role": "user", "content": goal},
     ]
     try:

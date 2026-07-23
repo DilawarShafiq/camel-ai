@@ -91,6 +91,15 @@ async def fix_brief(max_elements: int = 40) -> dict:
 
 
 @mcp.tool()
+async def detect_login() -> dict:
+    """Check whether the current page is a login/authentication wall. If it is,
+    do NOT keep clicking the sign-in button — call wait_for_login and let the
+    human complete the sign-in and any 2FA in the open browser, then continue."""
+    s = await _require()
+    return await s.detect_login()
+
+
+@mcp.tool()
 async def check_accessibility() -> dict:
     """Flag accessibility / UX defects on the current page a careful reviewer
     would catch: images without alt text, buttons/links with no accessible name,
