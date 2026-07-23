@@ -3,6 +3,24 @@
 All notable changes to Camel AI are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.0.3] — 2026-07-24
+
+### Added
+- **Real, persistent browser** — `camel login <url>` to sign in once; `camel
+  audit <url> --real-browser` reuses the logged-in session. Plus CDP attach to
+  your running Chrome.
+- **`camel dashboard`** — an enterprise web UI (audit, findings, "use my browser",
+  see all windows), served locally on starlette + uvicorn.
+- **`camel see`** — list every open window + full-screen screenshot.
+- **Scheduled autonomous jobs** — `camel jobs add/list/remove` + `camel daemon`
+  run recurring audits/goals unattended.
+- **WhatsApp chat (experimental)** — `camel whatsapp connect` (QR) + `camel
+  whatsapp bot` to chat with Camel AI from your phone.
+
+### Fixed
+- **Login walls** (0.0.2) — detect login/auth pages, skip the sign-in button
+  instead of hammering it, and hand off to the human (`wait_for_login`).
+
 ## [0.0.1] — 2026-07-24
 
 First public release. 🐫

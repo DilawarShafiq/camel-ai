@@ -1,6 +1,6 @@
 [project]
 name = "camel-ai"
-version = "0.0.2"
+version = "0.0.3"
 description = "AI-driven UI/UX automation & testing. Drives any software through its real UI (web, desktop, or pixels) — no target-app API required."
 readme = "README.md"
 requires-python = ">=3.10"

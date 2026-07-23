@@ -42,9 +42,15 @@ local Ollama model, or any custom OpenAI-compatible endpoint.** The default is
 you're never locked to one provider. Then:
 
 ```bash
-camel                     # opens the app (or the wizard on first run)
-camel run "log into my portal and download this month's invoices"
+camel dashboard           # enterprise web UI (audit, findings, see your windows)
 camel audit https://mysite.com        # a full UI/UX test → HTML report (no brain needed)
+camel login https://portal.com        # sign in once; reuse it with --real-browser
+camel audit https://portal.com --real-browser   # test the app behind your login
+camel run "download this month's invoices"       # AI does a goal
+camel jobs add "https://mysite.com" --at 09:00   # schedule it
+camel daemon              # run scheduled jobs autonomously
+camel see                 # show every open window + a screenshot
+camel whatsapp connect    # chat with Camel AI from your phone (experimental)
 ```
 
 You paste one free API key; you never touch Python or a terminal beyond the
