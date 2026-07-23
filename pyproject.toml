@@ -1,9 +1,19 @@
 [project]
 name = "uiscout"
 version = "0.1.0"
-description = "MCP server that lets your AI open a browser and audit a web app's UI/UX like a human tester."
+description = "AI-driven UI/UX automation & testing. Drives any software through its real UI (web, desktop, or pixels) — no target-app API required."
 readme = "README.md"
 requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["mcp", "playwright", "ui-testing", "automation", "ux", "qa",
+            "ui-automation", "computer-use", "agent"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = [
     "mcp[cli]>=1.2.0",
     "playwright>=1.44.0",
@@ -20,8 +30,12 @@ all = [
     "keyring>=24.0.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/yourname/uiscout"
+Issues = "https://github.com/yourname/uiscout/issues"
+
 [project.scripts]
-uiscout = "uiscout.server:main"
+uiscout = "uiscout.cli:main"
 
 [build-system]
 requires = ["hatchling"]

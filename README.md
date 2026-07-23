@@ -1,10 +1,18 @@
 # uiscout
 
-An AI-driven **UI/UX auditor**. It opens a browser, walks your web app like a
-human tester, and reports broken buttons, dead links, console errors, and
-interactivity problems — driven by *any* LLM.
+**Automate and test any software through its real UI — no target-app API needed.**
 
-Two ways to use it, sharing one LLM-agnostic Playwright core:
+uiscout drives software the way a human does: clicking, typing, and reading the
+screen. Web apps via Playwright, native Windows apps via UI Automation, and
+anything else via vision (screenshot + coordinate clicks). It audits UI/UX
+(dead buttons, console errors, broken flows) and automates goal-driven tasks.
+
+**The only API uiscout ever touches is an LLM API** (the brain — and you can use
+a subscription instead). It never needs the *target* software's API, because it
+operates the UI directly. That's the point: it works on the software that has no
+API, a paywalled API, or one you can't get access to.
+
+Two ways to drive it, sharing one LLM-agnostic core:
 
 1. **MCP server** — plug into Claude Code, Claude Desktop, Cursor, or Windsurf.
    Uses your existing **subscription**. No API key.
@@ -14,9 +22,30 @@ Two ways to use it, sharing one LLM-agnostic Playwright core:
 ## Install
 
 ```bash
-uv pip install -e .        # or: pipx install .
+uv pip install -e ".[desktop,vision]"    # extras optional; desktop is Windows-only
 python -m playwright install chromium
+uiscout doctor                            # verify the environment
 ```
+
+## CLI
+
+```bash
+uiscout audit https://example.com --out report.html   # full web audit → HTML report
+uiscout doctor                                         # check browsers + extras
+uiscout mcp-config                                     # print the MCP client snippet
+uiscout                                                # run the MCP server (stdio)
+```
+
+## Goal-driven, multi-agent (inside your MCP host)
+
+Drop `integrations/claude/` into your Claude Code project (`.claude/agents/` and
+`.claude/skills/`). Then just say what you want:
+
+> *"Test the checkout flow on localhost:3000 and tell me what breaks."*
+
+The `ui-test` skill plans it and hands execution to the `ui-tester` subagent
+(one per flow, in parallel for broad audits). Your **subscription** is the brain —
+no API key. The run is visible and pauses for you on 2FA/login.
 
 ## Use as an MCP server (subscription users, no API key)
 

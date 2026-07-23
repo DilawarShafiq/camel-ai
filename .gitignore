@@ -5,3 +5,7 @@ __pycache__/
 dist/
 build/
 .uiscout_shot.png
+uiscout-report.html
+sample-report.html
+sample-report.json
+.wa_profile/
