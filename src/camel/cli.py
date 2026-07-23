@@ -113,6 +113,10 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     with open(brief_path, "w", encoding="utf-8") as f:
         json.dump(result["fix_brief"], f, indent=2, default=str)
     print(f"  fix brief (for an AI coder) -> {brief_path}")
+    if args.markdown:
+        with open(args.markdown, "w", encoding="utf-8") as f:
+            f.write(result["markdown"])
+        print(f"  markdown -> {args.markdown}")
     if args.json:
         with open(args.json, "w", encoding="utf-8") as f:
             json.dump({k: v for k, v in result.items() if k != "html"}, f,
@@ -238,6 +242,7 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("url")
     a.add_argument("--out", help="HTML report path (default camel-report.html)")
     a.add_argument("--fix-brief", help="machine-readable fix brief JSON path")
+    a.add_argument("--markdown", help="also write a Markdown report to this path")
     a.add_argument("--json", help="also write raw results to this JSON path")
     a.add_argument("--max", type=int, default=40, help="max controls to test")
     a.add_argument("--enrich", action="store_true",
