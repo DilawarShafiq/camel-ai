@@ -4,7 +4,7 @@ This is the point of the whole testing side: not "here's what's broken" for a
 human to sigh at, but a structured hand-off another AI coder or developer can
 act on directly. Every finding carries a location, the evidence we observed,
 the user-facing impact, and a concrete suggested fix — plus a machine-readable
-JSON envelope (schema `uiscout.fixbrief/v1`) a fixing agent can consume.
+JSON envelope (schema `camel.fixbrief/v1`) a fixing agent can consume.
 """
 
 from __future__ import annotations
@@ -140,14 +140,14 @@ def to_fix_brief(url: str, findings: list[dict], summary: dict) -> dict:
     for f in findings:
         counts[f["severity"]] = counts.get(f["severity"], 0) + 1
     return {
-        "schema": "uiscout.fixbrief/v1",
-        "tool": "uiscout",
+        "schema": "camel.fixbrief/v1",
+        "tool": "camel",
         "target": url,
         "health_score": summary.get("score"),
         "totals": {"findings": len(findings), "by_severity": counts},
         "instructions_for_ai": (
             "You are fixing this application. Each finding has a location, the "
-            "evidence uiscout observed, the user impact, and a suggested_fix. "
+            "evidence camel observed, the user impact, and a suggested_fix. "
             "Apply fixes so the app behaves as a logical, non-broken product. "
             "Preserve intended features; don't delete functionality to silence a "
             "finding. Start with critical/high severity."),

@@ -1,12 +1,12 @@
 """User config + brain selection — the OpenClaw-style setup model.
 
-uiscout keeps a small config at ~/.uiscout/config.json holding which LLM "brain"
+camel keeps a small config at ~/.camel/config.json holding which LLM "brain"
 to use and its API key. Defaults to a FREE bring-your-own-key provider (Google
 Gemini's free tier), so a non-technical user pastes one free key in the wizard
 and never pays — no hosted backend, no per-token cost to you.
 
 All presets speak the OpenAI-compatible chat API, so a single provider class
-(uiscout.agent.OpenAICompatibleProvider) drives any of them.
+(camel.agent.OpenAICompatibleProvider) drives any of them.
 """
 
 from __future__ import annotations
@@ -16,12 +16,12 @@ import os
 from pathlib import Path
 from typing import Any
 
-CONFIG_DIR = Path(os.environ.get("UISCOUT_HOME", Path.home() / ".uiscout"))
+CONFIG_DIR = Path(os.environ.get("CAMEL_HOME", Path.home() / ".camel"))
 CONFIG_PATH = CONFIG_DIR / "config.json"
 
 # Each preset: where to get a key, the endpoint, and a sensible default model
 # (all user-overridable in the wizard).
-# uiscout speaks the OpenAI-compatible chat API, which nearly every major LLM
+# camel speaks the OpenAI-compatible chat API, which nearly every major LLM
 # provider exposes — so this list is "most of the world's LLMs", and OpenRouter
 # alone routes to hundreds more (Claude, GPT, Llama, Mistral, Qwen, ...).
 # `custom` lets a user point at ANY OpenAI-compatible endpoint we didn't list.
@@ -143,12 +143,12 @@ def set_brain(provider: str, api_key: str = "", model: str = "",
 
 def get_brain() -> dict[str, Any] | None:
     """Return the configured brain, honoring env overrides for CI/advanced use."""
-    env_key = os.environ.get("UISCOUT_API_KEY")
+    env_key = os.environ.get("CAMEL_API_KEY")
     if env_key:
-        prov = os.environ.get("UISCOUT_PROVIDER", DEFAULT_PROVIDER)
+        prov = os.environ.get("CAMEL_PROVIDER", DEFAULT_PROVIDER)
         preset = PROVIDERS.get(prov, PROVIDERS[DEFAULT_PROVIDER])
         return {"provider": prov, "base_url": preset["base_url"],
-                "model": os.environ.get("UISCOUT_MODEL", preset["model"]),
+                "model": os.environ.get("CAMEL_MODEL", preset["model"]),
                 "api_key": env_key}
     return load_config().get("brain")
 

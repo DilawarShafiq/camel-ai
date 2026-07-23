@@ -1,6 +1,6 @@
 [project]
-name = "uiscout"
-version = "0.1.0"
+name = "camel"
+version = "0.0.1"
 description = "AI-driven UI/UX automation & testing. Drives any software through its real UI (web, desktop, or pixels) — no target-app API required."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -45,15 +45,15 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [project.urls]
-Homepage = "https://github.com/yourname/uiscout"
-Issues = "https://github.com/yourname/uiscout/issues"
+Homepage = "https://github.com/DilawarShafiq/camel"
+Issues = "https://github.com/DilawarShafiq/camel/issues"
 
 [project.scripts]
-uiscout = "uiscout.cli:main"
+camel = "camel.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/uiscout"]
+packages = ["src/camel"]

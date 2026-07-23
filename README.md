@@ -1,13 +1,13 @@
-# uiscout
+# Camel
 
 **Automate and test any software through its real UI — no target-app API needed.**
 
-uiscout drives software the way a human does: clicking, typing, and reading the
+camel drives software the way a human does: clicking, typing, and reading the
 screen. Web apps via Playwright, native Windows apps via UI Automation, and
 anything else via vision (screenshot + coordinate clicks). It audits UI/UX
 (dead buttons, console errors, broken flows) and automates goal-driven tasks.
 
-**The only API uiscout ever touches is an LLM API** (the brain — and you can use
+**The only API camel ever touches is an LLM API** (the brain — and you can use
 a subscription instead). It never needs the *target* software's API, because it
 operates the UI directly. That's the point: it works on the software that has no
 API, a paywalled API, or one you can't get access to.
@@ -23,11 +23,11 @@ Two ways to drive it, sharing one LLM-agnostic core:
 
 **Windows**
 ```powershell
-irm https://raw.githubusercontent.com/yourname/uiscout/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/DilawarShafiq/camel/main/install.ps1 | iex
 ```
 **macOS / Linux**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yourname/uiscout/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/DilawarShafiq/camel/main/install.sh | bash
 ```
 
 The installer sets everything up (Python, the browser engine) and launches a
@@ -38,21 +38,21 @@ local Ollama model, or any custom OpenAI-compatible endpoint.** The default is
 you're never locked to one provider. Then:
 
 ```bash
-uiscout                     # opens the app (or the wizard on first run)
-uiscout run "log into my portal and download this month's invoices"
-uiscout audit https://mysite.com        # a full UI/UX test → HTML report (no brain needed)
+camel                     # opens the app (or the wizard on first run)
+camel run "log into my portal and download this month's invoices"
+camel audit https://mysite.com        # a full UI/UX test → HTML report (no brain needed)
 ```
 
 You paste one free API key; you never touch Python or a terminal beyond the
-install line. Advanced users can still `pip install "uiscout[desktop,vision]"`.
+install line. Advanced users can still `pip install "camel[desktop,vision]"`.
 
 ## CLI
 
 ```bash
-uiscout audit https://example.com --out report.html   # full web audit → HTML report
-uiscout doctor                                         # check browsers + extras
-uiscout mcp-config                                     # print the MCP client snippet
-uiscout                                                # run the MCP server (stdio)
+camel audit https://example.com --out report.html   # full web audit → HTML report
+camel doctor                                         # check browsers + extras
+camel mcp-config                                     # print the MCP client snippet
+camel                                                # run the MCP server (stdio)
 ```
 
 ## Goal-driven, multi-agent (inside your MCP host)
@@ -73,13 +73,13 @@ Add to your MCP client config (Claude Desktop / Cursor / Claude Code):
 ```json
 {
   "mcpServers": {
-    "uiscout": { "command": "uiscout" }
+    "camel": { "command": "camel" }
   }
 }
 ```
 
 Then ask your AI: *"Open http://localhost:3000 and audit every button."*
-Set `UISCOUT_HEADLESS=1` to hide the browser window.
+Set `CAMEL_HEADLESS=1` to hide the browser window.
 
 ### Tools exposed
 - `open_page(url)` — navigate
@@ -103,7 +103,7 @@ interactivity/accessibility classification (against a local HTML fixture).
 
 ```python
 import asyncio
-from uiscout.agent import run_audit, OpenAICompatibleProvider
+from camel.agent import run_audit, OpenAICompatibleProvider
 
 # Local Ollama — no API key
 prov = OpenAICompatibleProvider(model="llama3.1",
@@ -115,7 +115,7 @@ Any LLM works — implement `LLMProvider.chat(messages, tools) -> message`.
 
 ## Supported systems (one universal package, auto-detected)
 
-uiscout is **pure Python** — one wheel (`py3-none-any`) runs everywhere. The
+camel is **pure Python** — one wheel (`py3-none-any`) runs everywhere. The
 installer/pip **auto-detects the OS and CPU** and pulls the right pieces; you
 never choose a build. Per-OS desktop drivers install themselves via environment
 markers (Windows→uiautomation, macOS→atomacos, Linux→pyatspi).
@@ -126,19 +126,19 @@ markers (Windows→uiautomation, macOS→atomacos, Linux→pyatspi).
 | macOS 12+ (Intel & Apple Silicon) | ✅ | ⚠️ AX (experimental) | grant Accessibility permission |
 | Linux (glibc; x86_64 & ARM64) | ✅ | ⚠️ AT-SPI (experimental) | needs AT-SPI packages |
 
-Requires **Python 3.10+**. `uiscout doctor` reports your platform and what's
+Requires **Python 3.10+**. `camel doctor` reports your platform and what's
 ready. (macOS/Linux native desktop drivers are written but not yet CI-verified.)
 
 ## Testing → a fix brief for an AI coder
 
 The point of the testing side isn't a report a human skims — it's a **structured
 hand-off another AI/developer can act on** to repair the app. Every run produces
-a **fix brief** (`schema: uiscout.fixbrief/v1`): ranked findings, each with a
+a **fix brief** (`schema: camel.fixbrief/v1`): ranked findings, each with a
 `location`, the `evidence` observed, the user `impact`, and a concrete
 `suggested_fix`. Duplicate issues are collapsed with an occurrence count.
 
 ```bash
-uiscout audit https://mysite.com --out report.html --fix-brief fixes.json
+camel audit https://mysite.com --out report.html --fix-brief fixes.json
 ```
 
 Then hand `fixes.json` to Claude Code / any coding agent — or pull it live via
@@ -151,7 +151,7 @@ that runs in a browser, on any OS.
 Install the extras you need:
 
 ```bash
-pip install 'uiscout[desktop,vision]'      # Windows desktop + universal fallback
+pip install 'camel[desktop,vision]'      # Windows desktop + universal fallback
 ```
 
 | Driver | Reaches | How it "sees" | Reliability |
@@ -175,7 +175,7 @@ handoff is waiting.
 
 ```
         goal (natural language) ──► MCP host (subscription = brain, multi-agent)
-                                          │ calls uiscout MCP tools
+                                          │ calls camel MCP tools
    ┌───────────────┬──────────────────────┼───────────────┬────────────────┐
    Web driver     Desktop driver        Vision driver   Human-handoff    Notifier
   (Playwright)   (Windows UIA)      (screenshot+click)   (2FA/CAPTCHA)  (WhatsApp…)

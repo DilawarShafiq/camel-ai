@@ -1,6 +1,6 @@
 """Notifiers — ping the human when a handoff (2FA/CAPTCHA/login) is waiting.
 
-Product principle: the ONLY APIs uiscout ever touches are LLM APIs (the brain).
+Product principle: the ONLY APIs camel ever touches are LLM APIs (the brain).
 Every other system — including WhatsApp — is driven through its real UI, never
 through a service API. So notifications go out exactly the way a human would send
 them: by automating WhatsApp Web in a browser.
@@ -24,7 +24,7 @@ class ConsoleNotifier:
 class WhatsAppWebNotifier:
     """No API — on-thesis. Uses a PERSISTENT Playwright profile logged into
     WhatsApp Web (scan the QR once; the session persists in `user_data_dir`).
-    This is UI automation, same as everything else uiscout does: it opens the
+    This is UI automation, same as everything else camel does: it opens the
     chat, types the message, and hits Enter, exactly like a person would.
 
     Note: WhatsApp discourages automation, so keep this to your own alerts."""
@@ -68,13 +68,13 @@ class WhatsAppWebNotifier:
 def from_env() -> Any:
     """Build a notifier from environment variables, else ConsoleNotifier.
 
-    UISCOUT_NOTIFY = console | whatsapp_web
-      whatsapp_web reads UISCOUT_WA_CONTACT (+ optional UISCOUT_WA_PROFILE)
+    CAMEL_NOTIFY = console | whatsapp_web
+      whatsapp_web reads CAMEL_WA_CONTACT (+ optional CAMEL_WA_PROFILE)
     """
     import os
-    kind = os.environ.get("UISCOUT_NOTIFY", "console").lower()
+    kind = os.environ.get("CAMEL_NOTIFY", "console").lower()
     if kind == "whatsapp_web":
         return WhatsAppWebNotifier(
-            os.environ["UISCOUT_WA_CONTACT"],
-            os.environ.get("UISCOUT_WA_PROFILE", ".wa_profile"))
+            os.environ["CAMEL_WA_CONTACT"],
+            os.environ.get("CAMEL_WA_PROFILE", ".wa_profile"))
     return ConsoleNotifier()

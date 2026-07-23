@@ -7,7 +7,7 @@ raw mouse/keyboard at those coordinates. Works on literally anything on screen â
 at the cost of being slower, token-hungry, and less precise than the other
 drivers. Use it only when desktop/web can't see the controls.
 
-Requires the `vision` extra: `pip install 'uiscout[vision]'`.
+Requires the `vision` extra: `pip install 'camel[vision]'`.
 Backed by `pyautogui` (input + screenshot) and Pillow.
 """
 
@@ -24,7 +24,7 @@ def _pg() -> Any:
     except ImportError as e:  # pragma: no cover
         raise RuntimeError(
             "Vision driver needs the 'vision' extra. Install with:\n"
-            "  pip install 'uiscout[vision]'") from e
+            "  pip install 'camel[vision]'") from e
     # Safety: moving the mouse to a screen corner aborts a runaway automation.
     pyautogui.FAILSAFE = True
     pyautogui.PAUSE = 0.1
@@ -36,7 +36,7 @@ class VisionSession:
 
     def screenshot(self, path: str | None = None) -> dict:
         pg = _pg()
-        path = path or os.path.join(tempfile.gettempdir(), "uiscout_screen.png")
+        path = path or os.path.join(tempfile.gettempdir(), "camel_screen.png")
         img = pg.screenshot()
         img.save(path)
         w, h = pg.size()

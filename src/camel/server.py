@@ -15,7 +15,7 @@ from mcp.server.fastmcp import FastMCP
 from .browser import Session
 from .handoff import wait_for_human
 
-mcp = FastMCP("uiscout")
+mcp = FastMCP("camel")
 
 # One session per running server. A frontend owns the browser lifecycle.
 _session: Session | None = None
@@ -30,7 +30,7 @@ async def _require() -> Session:
 
 
 def _env_headless() -> bool:
-    return os.environ.get("UISCOUT_HEADLESS", "0").lower() in ("1", "true", "yes")
+    return os.environ.get("CAMEL_HEADLESS", "0").lower() in ("1", "true", "yes")
 
 
 @mcp.tool()
@@ -76,7 +76,7 @@ async def audit_interactivity(max_elements: int = 40) -> dict:
 @mcp.tool()
 async def fix_brief(max_elements: int = 40) -> dict:
     """Run a full audit of the current page and return a machine-readable FIX
-    BRIEF (schema uiscout.fixbrief/v1): ranked findings, each with location,
+    BRIEF (schema camel.fixbrief/v1): ranked findings, each with location,
     evidence, user impact, and a suggested fix. Hand this to a coding agent to
     repair the app into a logical, non-broken product."""
     s = await _require()
@@ -111,7 +111,7 @@ async def get_console_errors() -> list[dict]:
 async def screenshot() -> str:
     """Capture a full-page screenshot and return the file path."""
     s = await _require()
-    path = os.path.join(tempfile.gettempdir(), "uiscout_shot.png")
+    path = os.path.join(tempfile.gettempdir(), "camel_shot.png")
     return await s.screenshot(path)
 
 
@@ -138,7 +138,7 @@ async def wait_for_login(message: str, until_url_contains: str = "",
 @mcp.tool()
 async def desktop_list_windows() -> list[dict]:
     """List open top-level desktop windows (title + process). Windows only;
-    needs the `desktop` extra (pip install 'uiscout[desktop]')."""
+    needs the `desktop` extra (pip install 'camel[desktop]')."""
     from .desktop import DesktopSession
     return DesktopSession().list_windows()
 
@@ -174,7 +174,7 @@ async def desktop_set_value(window_title: str, name: str, text: str) -> dict:
 async def vision_screenshot() -> dict:
     """Capture the whole screen for pixel-level analysis when no accessibility
     tree exists. Returns the PNG path and screen size so you can reason about
-    coordinates. Needs the `vision` extra (pip install 'uiscout[vision]')."""
+    coordinates. Needs the `vision` extra (pip install 'camel[vision]')."""
     from .vision import VisionSession
     return VisionSession().screenshot()
 

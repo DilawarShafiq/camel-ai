@@ -5,7 +5,7 @@ The macOS analogue of the Windows UIA driver: it reads an app's real controls
 no pixel guessing. Backed by `atomacos` (a maintained wrapper over Apple's AX
 APIs).
 
-Requires: `pip install 'uiscout[desktop-mac]'` and granting the running terminal
+Requires: `pip install 'camel[desktop-mac]'` and granting the running terminal
 Accessibility permission (System Settings ▸ Privacy & Security ▸ Accessibility).
 
 NOTE: authored against the documented atomacos/AX API but NOT yet verified on a
@@ -34,7 +34,7 @@ def _atomac() -> Any:
     except ImportError as e:  # pragma: no cover
         raise RuntimeError(
             "macOS desktop driver needs the 'desktop-mac' extra:\n"
-            "  pip install 'uiscout[desktop-mac]'\n"
+            "  pip install 'camel[desktop-mac]'\n"
             "and Accessibility permission for your terminal.") from e
     return atomacos
 

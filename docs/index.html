@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>uiscout — automate & test any software</title>
+<title>Camel — automate & test any software</title>
 <style>
   :root { --bg:#0b0f19; --fg:#e5e7eb; --muted:#9aa4b2; --card:#111827;
           --accent:#4f8cff; --border:#1f2937; }
@@ -43,7 +43,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>uiscout</h1>
+  <h1>Camel</h1>
   <p class="tag">An AI that operates real software through its screen — tests any
     web or desktop app and hands a fix-brief to your AI coder, or automates your
     workflows. No target-app API needed.</p>
@@ -54,7 +54,7 @@
     <button data-os="linux">Linux</button>
   </div>
   <div class="cmd">
-    <code id="cmd">irm https://raw.githubusercontent.com/DilawarShafiq/uiscout/main/install.ps1 | iex</code>
+    <code id="cmd">irm https://raw.githubusercontent.com/DilawarShafiq/camel/main/install.ps1 | iex</code>
     <button id="copy">Copy</button>
   </div>
   <p class="tag" style="font-size:.95rem;margin-top:.8rem">
@@ -75,16 +75,16 @@
   </div>
 
   <footer>
-    Open source · <a href="https://github.com/DilawarShafiq/uiscout">GitHub</a><br>
-    The only API uiscout ever uses is an LLM API (or your subscription) — never the target app's.
+    Open source · <a href="https://github.com/DilawarShafiq/camel">GitHub</a><br>
+    The only API camel ever uses is an LLM API (or your subscription) — never the target app's.
   </footer>
 </div>
 
 <script>
   const CMDS = {
-    win: "irm https://raw.githubusercontent.com/DilawarShafiq/uiscout/main/install.ps1 | iex",
-    mac: "curl -fsSL https://raw.githubusercontent.com/DilawarShafiq/uiscout/main/install.sh | bash",
-    linux: "curl -fsSL https://raw.githubusercontent.com/DilawarShafiq/uiscout/main/install.sh | bash",
+    win: "irm https://raw.githubusercontent.com/DilawarShafiq/camel/main/install.ps1 | iex",
+    mac: "curl -fsSL https://raw.githubusercontent.com/DilawarShafiq/camel/main/install.sh | bash",
+    linux: "curl -fsSL https://raw.githubusercontent.com/DilawarShafiq/camel/main/install.sh | bash",
   };
   const codeEl = document.getElementById('cmd');
   document.querySelectorAll('.os button').forEach(b => b.onclick = () => {

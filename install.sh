@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# uiscout one-line installer (macOS / Linux)
-#   curl -fsSL https://raw.githubusercontent.com/yourname/uiscout/main/install.sh | bash
+# camel one-line installer (macOS / Linux)
+#   curl -fsSL https://raw.githubusercontent.com/DilawarShafiq/camel/main/install.sh | bash
 #
-# Installs uiscout, its browser engine, and launches the setup wizard.
+# Installs camel, its browser engine, and launches the setup wizard.
 set -euo pipefail
 
 echo ""
-echo "  Installing uiscout ..."
+echo "  Installing camel ..."
 
 # 1. Ensure Python 3
 if ! command -v python3 >/dev/null 2>&1; then
@@ -22,16 +22,17 @@ if ! command -v pipx >/dev/null 2>&1; then
   export PATH="$HOME/.local/bin:$PATH"
 fi
 
-# 3. Install uiscout (vision extra; desktop UIA is Windows-only)
-pipx install "uiscout[vision]" --force
+# 3. Install camel (vision extra; desktop UIA is Windows-only). Installed
+#    straight from GitHub so it works the moment the repo is public — no PyPI.
+pipx install "camel[vision] @ git+https://github.com/DilawarShafiq/camel" --force
 
 # 4. Browser engine
 python3 -m playwright install chromium
 
 # 5. First-run setup wizard
 echo ""
-echo "  uiscout installed. Starting setup ..."
-uiscout setup
+echo "  camel installed. Starting setup ..."
+camel setup
 
 echo ""
-echo "  Done. Launch anytime with:  uiscout"
+echo "  Done. Launch anytime with:  camel"

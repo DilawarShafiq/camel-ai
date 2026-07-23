@@ -8,7 +8,7 @@ import pathlib
 
 import pytest
 
-from uiscout.browser import Session
+from camel.browser import Session
 
 FIXTURE = (pathlib.Path(__file__).parent / "fixture.html").resolve().as_uri()
 

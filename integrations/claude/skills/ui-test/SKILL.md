@@ -1,6 +1,6 @@
 ---
 name: ui-test
-description: Test or automate any software through its UI from a natural-language goal. Use when the user says "test <app/flow>", "audit the UI of <url>", "click through <feature> and tell me what breaks", or "automate <task> in <app>". Drives web, desktop, or pixels via the uiscout MCP tools — no target-app API needed.
+description: Test or automate any software through its UI from a natural-language goal. Use when the user says "test <app/flow>", "audit the UI of <url>", "click through <feature> and tell me what breaks", or "automate <task> in <app>". Drives web, desktop, or pixels via the camel MCP tools — no target-app API needed.
 ---
 
 # ui-test
@@ -24,7 +24,7 @@ buttons for dead links, or automating a repetitive task in an app that has no
    and resumes automatically.
 5. **Synthesize** the subagents' findings into one report: health score, dead
    controls, console errors, broken/confusing flows, and fixes. Offer to write it
-   to an HTML file (the `uiscout audit` CLI also produces one for pure web runs).
+   to an HTML file (the `camel audit` CLI also produces one for pure web runs).
 
 ## Guardrails
 - Only automate accounts/software the user is authorized to use.

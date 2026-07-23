@@ -83,12 +83,12 @@ class OpenAICompatibleProvider:
 
 
 def provider_from_config() -> "OpenAICompatibleProvider":
-    """Build the brain from the user's ~/.uiscout config (set by `uiscout setup`).
+    """Build the brain from the user's ~/.camel config (set by `camel setup`).
     Raises a friendly error if setup hasn't been run."""
     from . import config
     brain = config.get_brain()
     if not brain:
-        raise RuntimeError("No brain configured. Run `uiscout setup` first.")
+        raise RuntimeError("No brain configured. Run `camel setup` first.")
     return OpenAICompatibleProvider(
         model=brain["model"], base_url=brain["base_url"],
         api_key=brain.get("api_key", "not-needed"))
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     import sys
 
     # Example: point at a local Ollama model (no API key needed).
-    #   python -m uiscout.agent "Audit every button on http://localhost:3000"
+    #   python -m camel.agent "Audit every button on http://localhost:3000"
     prov = OpenAICompatibleProvider(
         model="llama3.1", base_url="http://localhost:11434/v1")
     task = sys.argv[1] if len(sys.argv) > 1 else "Audit https://example.com"

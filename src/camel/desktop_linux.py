@@ -6,7 +6,7 @@ from the AT-SPI tree (what Orca screen reader uses) and drives them. Backed by
 
 Requires: the system `python3-pyatspi` / `gir1.2-atspi-2.0` packages and an
 accessibility-enabled session (`gsettings set org.gnome.desktop.interface
-toolkit-accessibility true`). Install extra: `pip install 'uiscout[desktop-linux]'`.
+toolkit-accessibility true`). Install extra: `pip install 'camel[desktop-linux]'`.
 
 NOTE: authored against the documented pyatspi API but NOT yet verified on Linux
 from this project's CI — treat as experimental until validated on a Linux desktop.
@@ -34,7 +34,7 @@ def _atspi() -> Any:
     except ImportError as e:  # pragma: no cover
         raise RuntimeError(
             "Linux desktop driver needs the 'desktop-linux' extra and system "
-            "AT-SPI packages:\n  pip install 'uiscout[desktop-linux]'\n"
+            "AT-SPI packages:\n  pip install 'camel[desktop-linux]'\n"
             "  sudo apt install python3-pyatspi gir1.2-atspi-2.0") from e
     return pyatspi
 

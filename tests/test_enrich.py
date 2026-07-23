@@ -1,6 +1,6 @@
 """Enrichment merge logic — verified with a fake provider (no live LLM)."""
 
-from uiscout.enrich import enrich_findings
+from camel.enrich import enrich_findings
 
 
 class FakeProvider:

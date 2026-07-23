@@ -6,7 +6,7 @@ control types, and automationIds. That means we can "see" and drive most native
 and many Electron apps WITHOUT guessing pixels — the reliable middle tier
 between the web driver and the vision fallback.
 
-Requires the `desktop` extra: `pip install 'uiscout[desktop]'` (Windows only).
+Requires the `desktop` extra: `pip install 'camel[desktop]'` (Windows only).
 Backed by the pure-Python `uiautomation` package.
 """
 
@@ -21,7 +21,7 @@ def _auto() -> Any:
     except ImportError as e:  # pragma: no cover
         raise RuntimeError(
             "Desktop driver needs the 'desktop' extra. Install with:\n"
-            "  pip install 'uiscout[desktop]'   (Windows only)") from e
+            "  pip install 'camel[desktop]'   (Windows only)") from e
     return auto
 
 

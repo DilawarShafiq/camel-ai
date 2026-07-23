@@ -1,4 +1,4 @@
-"""uiscout desktop app — the non-technical "type your goal" window.
+"""camel desktop app — the non-technical "type your goal" window.
 
 A brain-agnostic shell: the user types what they want, watches progress, and gets
 a "I've finished logging in ▸ Continue" button when the automation pauses for
@@ -18,7 +18,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 
-APP_TITLE = "uiscout — automate & test any software"
+APP_TITLE = "camel — automate & test any software"
 BG = "#0b0f19"
 FG = "#e5e7eb"
 ACCENT = "#4f8cff"
@@ -131,7 +131,7 @@ class App:
         """Where the brain plugs in. For now: if the goal is a plain audit of a
         URL, run the deterministic auditor (no brain needed) so the app works
         today. A hosted/BYO-key/local brain replaces this branch to handle
-        arbitrary goals via uiscout.agent.run_audit."""
+        arbitrary goals via camel.agent.run_audit."""
         import re
         from . import config
         from .runner import full_web_audit
@@ -146,7 +146,7 @@ class App:
             self.emit("log", f"Opening {url} and clicking every control…")
             result = await full_web_audit(url, headless=not self.show_browser.get())
             s = result["summary"]
-            out = "uiscout-report.html"
+            out = "camel-report.html"
             with open(out, "w", encoding="utf-8") as f:
                 f.write(result["html"])
             self.emit("log", f"Health score: {s['score']}/100")
@@ -160,7 +160,7 @@ class App:
         # General goal: drive it with the configured brain.
         if not config.is_configured():
             self.emit("log", "No AI brain connected yet. Open Setup and paste a "
-                             "free key (menu / run `uiscout setup`).")
+                             "free key (menu / run `camel setup`).")
             self.emit("done", "Connect a brain to run general goals.")
             return
         from .agent import provider_from_config, run_audit

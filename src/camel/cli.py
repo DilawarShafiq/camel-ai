@@ -1,12 +1,12 @@
-"""uiscout command-line entry.
+"""camel command-line entry.
 
-  uiscout setup           first-run wizard: pick a brain + paste a free API key
-  uiscout run "GOAL"      do a goal in plain English (uses your configured brain)
-  uiscout audit URL       run a full web audit and write an HTML report
-  uiscout doctor          check the environment (brain, browsers, extras)
-  uiscout mcp-config      print the JSON snippet to add uiscout to an MCP client
-  uiscout server          run the MCP server (stdio) — what MCP clients launch
-  uiscout                 (no args) opens setup on first run, else runs the app
+  camel setup           first-run wizard: pick a brain + paste a free API key
+  camel run "GOAL"      do a goal in plain English (uses your configured brain)
+  camel audit URL       run a full web audit and write an HTML report
+  camel doctor          check the environment (brain, browsers, extras)
+  camel mcp-config      print the JSON snippet to add camel to an MCP client
+  camel server          run the MCP server (stdio) — what MCP clients launch
+  camel                 (no args) opens setup on first run, else runs the app
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ def _cmd_server(_: argparse.Namespace) -> int:
 
 def _cmd_doctor(_: argparse.Namespace) -> int:
     ok = True
-    print("uiscout doctor\n" + "-" * 40)
+    print("camel doctor\n" + "-" * 40)
 
     def check(name: str, fn) -> None:
         nonlocal ok
@@ -47,7 +47,7 @@ def _cmd_doctor(_: argparse.Namespace) -> int:
         from . import config
         b = config.get_brain()
         if not b:
-            raise RuntimeError("not set — run `uiscout setup`")
+            raise RuntimeError("not set — run `camel setup`")
         keyed = b.get("api_key") not in (None, "", "not-needed")
         return f"{b['provider']} · {b['model']}" + ("" if keyed or b["provider"] == "local"
                                                      else " (no key yet)")
@@ -100,7 +100,7 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     result = asyncio.run(full_web_audit(
         args.url, headless=not args.show, max_elements=args.max,
         enrich=args.enrich))
-    out = args.out or "uiscout-report.html"
+    out = args.out or "camel-report.html"
     with open(out, "w", encoding="utf-8") as f:
         f.write(result["html"])
     s = result["summary"]
@@ -124,7 +124,7 @@ def _cmd_audit(args: argparse.Namespace) -> int:
 def _cmd_setup(args: argparse.Namespace) -> int:
     """OpenClaw-style first-run wizard: choose a brain, paste a free key."""
     from . import config
-    print("\n  uiscout setup — connect your AI brain\n" + "  " + "-" * 38)
+    print("\n  camel setup — connect your AI brain\n" + "  " + "-" * 38)
 
     # Non-interactive path (flags) — for scripts/CI.
     if args.provider:
@@ -174,7 +174,7 @@ def _cmd_setup(args: argparse.Namespace) -> int:
                              base_url=base_url)
     print(f"\n  ✓ Brain set: {brain['provider']} · {brain['model']}")
     print(f"  ✓ Saved to {config.CONFIG_PATH}")
-    print("\n  Try it:  uiscout run \"audit every button on https://example.com\"\n")
+    print("\n  Try it:  camel run \"audit every button on https://example.com\"\n")
     return 0
 
 
@@ -182,7 +182,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
     """Do a plain-English goal using the configured brain."""
     from . import config
     if not config.is_configured():
-        print("No brain configured yet. Run:  uiscout setup")
+        print("No brain configured yet. Run:  camel setup")
         return 1
     from .agent import provider_from_config, run_audit
     provider = provider_from_config()
@@ -200,7 +200,7 @@ def _cmd_app(_: argparse.Namespace) -> int:
 
 
 def _cmd_mcp_config(_: argparse.Namespace) -> int:
-    cfg = {"mcpServers": {"uiscout": {"command": "uiscout", "args": ["server"]}}}
+    cfg = {"mcpServers": {"camel": {"command": "camel", "args": ["server"]}}}
     print(json.dumps(cfg, indent=2))
     print("\nAdd this to your MCP client config "
           "(Claude Desktop / Cursor / Claude Code), then restart it.")
@@ -208,7 +208,7 @@ def _cmd_mcp_config(_: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="uiscout",
+    p = argparse.ArgumentParser(prog="camel",
                                 description="AI-driven UI/UX automation & testing.")
     sub = p.add_subparsers(dest="cmd")
 
@@ -233,7 +233,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     a = sub.add_parser("audit", help="run a full web audit and write a report")
     a.add_argument("url")
-    a.add_argument("--out", help="HTML report path (default uiscout-report.html)")
+    a.add_argument("--out", help="HTML report path (default camel-report.html)")
     a.add_argument("--fix-brief", help="machine-readable fix brief JSON path")
     a.add_argument("--json", help="also write raw results to this JSON path")
     a.add_argument("--max", type=int, default=40, help="max controls to test")
@@ -248,8 +248,8 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     if not getattr(args, "cmd", None):
-        # Bare `uiscout`: first run -> setup wizard; afterwards -> desktop app.
-        # (MCP clients launch `uiscout server` explicitly.)
+        # Bare `camel`: first run -> setup wizard; afterwards -> desktop app.
+        # (MCP clients launch `camel server` explicitly.)
         from . import config
         if not config.is_configured():
             sys.exit(_cmd_setup(args))

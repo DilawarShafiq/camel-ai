@@ -1,6 +1,6 @@
 """Pure-function tests for the report layer — no browser, fast, deterministic."""
 
-from uiscout import report
+from camel import report
 
 AUDIT = {
     "tested": 4,
