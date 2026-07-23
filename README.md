@@ -113,6 +113,22 @@ print(asyncio.run(run_audit(prov, "Audit every button on http://localhost:3000")
 
 Any LLM works — implement `LLMProvider.chat(messages, tools) -> message`.
 
+## Supported systems (one universal package, auto-detected)
+
+uiscout is **pure Python** — one wheel (`py3-none-any`) runs everywhere. The
+installer/pip **auto-detects the OS and CPU** and pulls the right pieces; you
+never choose a build. Per-OS desktop drivers install themselves via environment
+markers (Windows→uiautomation, macOS→atomacos, Linux→pyatspi).
+
+| System | Web + vision | Native desktop | Notes |
+|---|---|---|---|
+| Windows 10/11 (64-bit, x64/ARM64) | ✅ | ✅ UIA | 32-bit unsupported (browser engine needs 64-bit) |
+| macOS 12+ (Intel & Apple Silicon) | ✅ | ⚠️ AX (experimental) | grant Accessibility permission |
+| Linux (glibc; x86_64 & ARM64) | ✅ | ⚠️ AT-SPI (experimental) | needs AT-SPI packages |
+
+Requires **Python 3.10+**. `uiscout doctor` reports your platform and what's
+ready. (macOS/Linux native desktop drivers are written but not yet CI-verified.)
+
 ## Testing → a fix brief for an AI coder
 
 The point of the testing side isn't a report a human skims — it's a **structured

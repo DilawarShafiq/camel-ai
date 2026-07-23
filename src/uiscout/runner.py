@@ -12,9 +12,11 @@ from . import report, findings
 
 
 async def full_web_audit(url: str, *, headless: bool = True,
-                         max_elements: int = 40) -> dict:
+                         max_elements: int = 40, enrich: bool = False) -> dict:
     """Open a site, audit every interactive control, collect console errors,
-    and return {summary, audit, console_errors, markdown, html}."""
+    and return {summary, audit, console_errors, findings, fix_brief, markdown,
+    html}. If `enrich` and a brain is configured, the LLM rewrites each
+    suggested fix into something app-specific."""
     s = Session(headless=headless)
     await s.start()
     try:
@@ -27,6 +29,15 @@ async def full_web_audit(url: str, *, headless: bool = True,
 
     summary = {**report.summarize(audit, errors), "a11y_issues": a11y["issue_count"]}
     found = findings.generate(url, audit, errors, a11y)
+    if enrich:
+        try:
+            from . import config
+            if config.is_configured():
+                from .agent import provider_from_config
+                from .enrich import enrich_findings
+                found = enrich_findings(provider_from_config(), url, found)
+        except Exception:
+            pass  # enrichment is best-effort; heuristic fixes remain
     fix_brief = findings.to_fix_brief(url, found, summary)
     return {
         "url": url,

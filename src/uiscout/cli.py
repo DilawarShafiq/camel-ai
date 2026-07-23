@@ -52,7 +52,18 @@ def _cmd_doctor(_: argparse.Namespace) -> int:
         return f"{b['provider']} · {b['model']}" + ("" if keyed or b["provider"] == "local"
                                                      else " (no key yet)")
 
+    def platform_line() -> str:
+        import platform
+        bits = platform.architecture()[0]
+        note = ""
+        if sys.platform == "win32" and bits.startswith("32"):
+            note = "  ⚠ 32-bit: the browser engine needs 64-bit Windows"
+        if sys.version_info < (3, 10):
+            note += "  ⚠ Python 3.10+ required"
+        return f"{platform.system()} {platform.machine()} · {bits}{note}"
+
     check("python", lambda: sys.version.split()[0])
+    check("platform", platform_line)
     check("brain", brain)
     check("playwright", lambda: ver("playwright"))
 
@@ -87,7 +98,8 @@ def _try(mod: str) -> bool:
 def _cmd_audit(args: argparse.Namespace) -> int:
     from .runner import full_web_audit
     result = asyncio.run(full_web_audit(
-        args.url, headless=not args.show, max_elements=args.max))
+        args.url, headless=not args.show, max_elements=args.max,
+        enrich=args.enrich))
     out = args.out or "uiscout-report.html"
     with open(out, "w", encoding="utf-8") as f:
         f.write(result["html"])
@@ -225,6 +237,8 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--fix-brief", help="machine-readable fix brief JSON path")
     a.add_argument("--json", help="also write raw results to this JSON path")
     a.add_argument("--max", type=int, default=40, help="max controls to test")
+    a.add_argument("--enrich", action="store_true",
+                   help="use your AI brain to write app-specific fixes")
     a.add_argument("--show", action="store_true", help="show the browser window")
     a.set_defaults(fn=_cmd_audit)
     return p

@@ -71,12 +71,25 @@ class WebDriver:
             await self._session.stop()
 
 
+def _desktop_session() -> Any:
+    """Pick the native desktop backend for this OS (Windows UIA / macOS AX /
+    Linux AT-SPI). All expose the same list_windows/snapshot/invoke/set_value."""
+    import sys
+    if sys.platform == "win32":
+        from .desktop import DesktopSession
+        return DesktopSession()
+    if sys.platform == "darwin":
+        from .desktop_mac import MacDesktopSession
+        return MacDesktopSession()
+    from .desktop_linux import LinuxDesktopSession
+    return LinuxDesktopSession()
+
+
 class DesktopDriver:
     kind = "desktop"
 
     def __init__(self) -> None:
-        from .desktop import DesktopSession
-        self._d = DesktopSession()
+        self._d = _desktop_session()
         self._window = ""
 
     async def open(self, target: str) -> dict:

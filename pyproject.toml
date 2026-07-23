@@ -9,8 +9,15 @@ keywords = ["mcp", "playwright", "ui-testing", "automation", "ux", "qa",
             "ui-automation", "computer-use", "agent"]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
     "Topic :: Software Development :: Testing",
     "Topic :: Software Development :: Quality Assurance",
 ]
@@ -21,6 +28,8 @@ dependencies = [
 
 [project.optional-dependencies]
 desktop = ["uiautomation>=2.0.18; sys_platform == 'win32'"]
+desktop-mac = ["atomacos>=3.3.0; sys_platform == 'darwin'"]
+desktop-linux = ["pyatspi>=2.38; sys_platform == 'linux'"]
 vision = ["pyautogui>=0.9.54", "pillow>=10.0.0"]
 credentials = ["keyring>=24.0.0"]
 all = [
