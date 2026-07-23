@@ -257,6 +257,10 @@ def _cmd_jobs(args: argparse.Namespace) -> int:
         print(f"Added {j['id']}: {j['kind']} '{j['task']}' every {j['every']} at {j['at']}")
     elif args.jobs_cmd == "remove":
         print("Removed." if scheduler.remove_job(args.id) else "No such job.")
+    elif args.jobs_cmd in ("enable", "disable"):
+        on = args.jobs_cmd == "enable"
+        ok = scheduler.set_enabled(args.id, on)
+        print(f"{'Enabled' if on else 'Disabled'} {args.id}." if ok else "No such job.")
     else:  # list
         jobs = scheduler.list_jobs()
         if not jobs:
@@ -365,6 +369,10 @@ def build_parser() -> argparse.ArgumentParser:
     jbs.add_parser("list", help="list jobs")
     jr = jbs.add_parser("remove", help="remove a job")
     jr.add_argument("id")
+    je = jbs.add_parser("enable", help="resume a job")
+    je.add_argument("id")
+    jd = jbs.add_parser("disable", help="pause a job")
+    jd.add_argument("id")
     jb.set_defaults(fn=_cmd_jobs, jobs_cmd="list")
 
     dm = sub.add_parser("daemon", help="run scheduled jobs autonomously")
