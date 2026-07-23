@@ -1,9 +1,10 @@
 name: Publish to PyPI
-# MANUAL trigger only. Camel AI installs from GitHub, so PyPI is optional.
-# Note: the name "camel-ai" is already taken on PyPI by another project — to
-# publish here, first change `name` in pyproject.toml to an available name and
-# configure PyPI Trusted Publishing at
-# https://pypi.org/manage/account/publishing/ for this repo.
+# Publishes the `camelai` package to PyPI. Manual trigger so it only runs once
+# you've set up PyPI Trusted Publishing for this repo:
+#   https://pypi.org/manage/account/publishing/
+#   PyPI project: camelai · Owner: DilawarShafiq · Repo: camel-ai
+#   Workflow: publish.yml · Environment: (leave blank)
+# After that, run this workflow to publish. Then: pip install camelai
 on:
   workflow_dispatch:
 

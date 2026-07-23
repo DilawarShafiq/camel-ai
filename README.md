@@ -68,7 +68,7 @@ camel whatsapp connect    # chat with Camel AI from your phone (experimental)
 ```
 
 You paste one free API key; you never touch Python or a terminal beyond the
-install line. Advanced users can still `pip install "camel-ai[desktop,vision]"`.
+install line. Advanced users can still `pip install "camelai[desktop,vision]"`.
 
 ### Enterprise / scaling install (Docker)
 
@@ -190,7 +190,7 @@ that runs in a browser, on any OS.
 Install the extras you need:
 
 ```bash
-pip install 'camel-ai[desktop,vision]'      # Windows desktop + universal fallback
+pip install 'camelai[desktop,vision]'      # Windows desktop + universal fallback
 ```
 
 | Driver | Reaches | How it "sees" | Reliability |
