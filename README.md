@@ -56,14 +56,41 @@ print(asyncio.run(run_audit(prov, "Audit every button on http://localhost:3000")
 
 Any LLM works — implement `LLMProvider.chat(messages, tools) -> message`.
 
+## Three drivers — web, desktop, anything
+
+Install the extras you need:
+
+```bash
+pip install 'uiscout[desktop,vision]'      # Windows desktop + universal fallback
+```
+
+| Driver | Reaches | How it "sees" | Reliability |
+|--------|---------|---------------|-------------|
+| **Web** (`browser.py`) | Websites / web apps | DOM + a11y tree (Playwright) | High |
+| **Desktop** (`desktop.py`) | Native Windows apps | UI Automation control tree | Good |
+| **Vision** (`vision.py`) | *Anything on screen* | Screenshot → LLM picks coords | Fallback |
+
+Strategy: try Web/Desktop first (structured, fast, precise); drop to Vision only
+when there's no accessibility info to read.
+
+### Human-in-the-loop (2FA / CAPTCHA / login) — no API
+
+`wait_for_login(message, until_url_contains=..., until_selector=...)` **pauses**
+the automation, lets *you* finish the sensitive step in the visible browser, and
+**resumes automatically** the moment it detects success. The automation never
+touches your 2FA code. An optional `Notifier` (e.g. WhatsApp) can ping you that a
+handoff is waiting.
+
 ## Architecture
 
 ```
-uiscout core (browser.py)  ← LLM-agnostic Playwright toolkit, no AI inside
-   ├── server.py   MCP frontend   → subscription clients (no API key)
-   └── agent.py    agent frontend → any LLM (OpenAI-compatible / local)
-```
+        goal (natural language) ──► MCP host (subscription = brain, multi-agent)
+                                          │ calls uiscout MCP tools
+   ┌───────────────┬──────────────────────┼───────────────┬────────────────┐
+   Web driver     Desktop driver        Vision driver   Human-handoff    Notifier
+  (Playwright)   (Windows UIA)      (screenshot+click)   (2FA/CAPTCHA)  (WhatsApp…)
+        └──────────────┴───────── shared core, one interface ─────────────────┘
 
-Roadmap: a `DesktopDriver` (Windows UI Automation) and a `VisionDriver`
-(screenshot + coordinate clicks) behind the same interface, to reach native
-desktop apps and anything without an accessibility tree.
+Frontends:  server.py (MCP → subscription, no API key)
+            agent.py  (any LLM → OpenAI-compatible / local Ollama)
+```
