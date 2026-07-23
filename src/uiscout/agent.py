@@ -57,8 +57,8 @@ class LLMProvider(Protocol):
 
 
 class OpenAICompatibleProvider:
-    """Works with OpenAI and any OpenAI-compatible endpoint (Ollama, LM Studio,
-    vLLM, Groq, Together, ...)."""
+    """Works with OpenAI and any OpenAI-compatible endpoint (Gemini's OpenAI
+    endpoint, OpenRouter, Ollama, LM Studio, vLLM, Groq, Together, ...)."""
 
     def __init__(self, model: str, base_url: str = "https://api.openai.com/v1",
                  api_key: str = "not-needed") -> None:
@@ -80,6 +80,18 @@ class OpenAICompatibleProvider:
         with urllib.request.urlopen(req, timeout=120) as resp:
             data = json.loads(resp.read())
         return data["choices"][0]["message"]
+
+
+def provider_from_config() -> "OpenAICompatibleProvider":
+    """Build the brain from the user's ~/.uiscout config (set by `uiscout setup`).
+    Raises a friendly error if setup hasn't been run."""
+    from . import config
+    brain = config.get_brain()
+    if not brain:
+        raise RuntimeError("No brain configured. Run `uiscout setup` first.")
+    return OpenAICompatibleProvider(
+        model=brain["model"], base_url=brain["base_url"],
+        api_key=brain.get("api_key", "not-needed"))
 
 
 async def _dispatch(session: Session, name: str, args: dict) -> Any:

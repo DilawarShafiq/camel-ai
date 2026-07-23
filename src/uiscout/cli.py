@@ -1,10 +1,12 @@
 """uiscout command-line entry.
 
-  uiscout                 run the MCP server (stdio) — what MCP clients launch
-  uiscout server          same, explicit
-  uiscout doctor          check the environment (browsers, extras)
+  uiscout setup           first-run wizard: pick a brain + paste a free API key
+  uiscout run "GOAL"      do a goal in plain English (uses your configured brain)
   uiscout audit URL       run a full web audit and write an HTML report
+  uiscout doctor          check the environment (brain, browsers, extras)
   uiscout mcp-config      print the JSON snippet to add uiscout to an MCP client
+  uiscout server          run the MCP server (stdio) — what MCP clients launch
+  uiscout                 (no args) opens setup on first run, else runs the app
 """
 
 from __future__ import annotations
@@ -41,7 +43,17 @@ def _cmd_doctor(_: argparse.Namespace) -> int:
         except PackageNotFoundError:
             return "not installed (optional)"
 
+    def brain() -> str:
+        from . import config
+        b = config.get_brain()
+        if not b:
+            raise RuntimeError("not set — run `uiscout setup`")
+        keyed = b.get("api_key") not in (None, "", "not-needed")
+        return f"{b['provider']} · {b['model']}" + ("" if keyed or b["provider"] == "local"
+                                                     else " (no key yet)")
+
     check("python", lambda: sys.version.split()[0])
+    check("brain", brain)
     check("playwright", lambda: ver("playwright"))
 
     def chromium() -> str:
@@ -92,8 +104,75 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_setup(args: argparse.Namespace) -> int:
+    """OpenClaw-style first-run wizard: choose a brain, paste a free key."""
+    from . import config
+    print("\n  uiscout setup — connect your AI brain\n" + "  " + "-" * 38)
+
+    # Non-interactive path (flags) — for scripts/CI.
+    if args.provider:
+        brain = config.set_brain(args.provider, api_key=args.api_key or "",
+                                 model=args.model or "")
+        print(f"  Saved: {brain['provider']} · {brain['model']}")
+        print(f"  Config: {config.CONFIG_PATH}")
+        return 0
+
+    provs = list(config.PROVIDERS.items())
+    print("  Choose your AI provider (the 'brain'):\n")
+    for i, (key, p) in enumerate(provs, 1):
+        star = "  ← recommended, FREE" if key == config.DEFAULT_PROVIDER else ""
+        print(f"    {i}. {p['label']}{star}")
+    try:
+        pick = input(f"\n  Number [1-{len(provs)}] (default 1): ").strip() or "1"
+        prov_key = provs[int(pick) - 1][0]
+    except (ValueError, IndexError, EOFError):
+        prov_key = config.DEFAULT_PROVIDER
+    preset = config.PROVIDERS[prov_key]
+
+    api_key = ""
+    if preset["key_url"]:
+        print(f"\n  Get a free key here:  {preset['key_url']}")
+        try:
+            api_key = input("  Paste your API key: ").strip()
+        except EOFError:
+            api_key = ""
+
+    model = ""
+    try:
+        model = input(f"  Model (default {preset['model']}): ").strip()
+    except EOFError:
+        model = ""
+
+    brain = config.set_brain(prov_key, api_key=api_key, model=model)
+    print(f"\n  ✓ Brain set: {brain['provider']} · {brain['model']}")
+    print(f"  ✓ Saved to {config.CONFIG_PATH}")
+    print("\n  Try it:  uiscout run \"audit every button on https://example.com\"\n")
+    return 0
+
+
+def _cmd_run(args: argparse.Namespace) -> int:
+    """Do a plain-English goal using the configured brain."""
+    from . import config
+    if not config.is_configured():
+        print("No brain configured yet. Run:  uiscout setup")
+        return 1
+    from .agent import provider_from_config, run_audit
+    provider = provider_from_config()
+    print(f"Goal: {args.goal}\n(brain: {config.get_brain()['model']})\n")
+    result = asyncio.run(run_audit(provider, args.goal,
+                                   headless=not args.show, max_steps=args.max_steps))
+    print("\n=== Result ===\n" + result)
+    return 0
+
+
+def _cmd_app(_: argparse.Namespace) -> int:
+    from .app import main as run_app
+    run_app()
+    return 0
+
+
 def _cmd_mcp_config(_: argparse.Namespace) -> int:
-    cfg = {"mcpServers": {"uiscout": {"command": "uiscout"}}}
+    cfg = {"mcpServers": {"uiscout": {"command": "uiscout", "args": ["server"]}}}
     print(json.dumps(cfg, indent=2))
     print("\nAdd this to your MCP client config "
           "(Claude Desktop / Cursor / Claude Code), then restart it.")
@@ -104,6 +183,20 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="uiscout",
                                 description="AI-driven UI/UX automation & testing.")
     sub = p.add_subparsers(dest="cmd")
+
+    st = sub.add_parser("setup", help="first-run wizard: connect your AI brain")
+    st.add_argument("--provider", help="gemini|openrouter|openai|local (skip prompts)")
+    st.add_argument("--api-key", help="API key (with --provider)")
+    st.add_argument("--model", help="override the model")
+    st.set_defaults(fn=_cmd_setup)
+
+    r = sub.add_parser("run", help="do a plain-English goal with your brain")
+    r.add_argument("goal")
+    r.add_argument("--show", action="store_true", help="show the browser window")
+    r.add_argument("--max-steps", type=int, default=20)
+    r.set_defaults(fn=_cmd_run)
+
+    sub.add_parser("app", help="open the desktop window").set_defaults(fn=_cmd_app)
     sub.add_parser("server", help="run the MCP server (stdio)").set_defaults(fn=_cmd_server)
     sub.add_parser("doctor", help="check the environment").set_defaults(fn=_cmd_doctor)
     sub.add_parser("mcp-config", help="print MCP client config snippet").set_defaults(fn=_cmd_mcp_config)
@@ -122,8 +215,12 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     if not getattr(args, "cmd", None):
-        # Bare `uiscout` = run the MCP server (what clients invoke).
-        _cmd_server(args)
+        # Bare `uiscout`: first run -> setup wizard; afterwards -> desktop app.
+        # (MCP clients launch `uiscout server` explicitly.)
+        from . import config
+        if not config.is_configured():
+            sys.exit(_cmd_setup(args))
+        _cmd_app(args)
         return
     sys.exit(args.fn(args))
 

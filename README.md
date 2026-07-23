@@ -19,13 +19,30 @@ Two ways to drive it, sharing one LLM-agnostic core:
 2. **Any-LLM agent** — point your own model (OpenAI, Ollama, LM Studio, vLLM,
    Groq, …) at it via a tiny `LLMProvider` interface.
 
-## Install
+## Install (one line) + connect a free brain
+
+**Windows**
+```powershell
+irm https://raw.githubusercontent.com/yourname/uiscout/main/install.ps1 | iex
+```
+**macOS / Linux**
+```bash
+curl -fsSL https://raw.githubusercontent.com/yourname/uiscout/main/install.sh | bash
+```
+
+The installer sets everything up (Python, the browser engine) and launches a
+**setup wizard**. Pick a brain and paste one key — the default is **Google
+Gemini's free tier (no credit card)**, so it costs nothing and there's no hosted
+service in the middle. Then:
 
 ```bash
-uv pip install -e ".[desktop,vision]"    # extras optional; desktop is Windows-only
-python -m playwright install chromium
-uiscout doctor                            # verify the environment
+uiscout                     # opens the app (or the wizard on first run)
+uiscout run "log into my portal and download this month's invoices"
+uiscout audit https://mysite.com        # a full UI/UX test → HTML report (no brain needed)
 ```
+
+You paste one free API key; you never touch Python or a terminal beyond the
+install line. Advanced users can still `pip install "uiscout[desktop,vision]"`.
 
 ## CLI
 
