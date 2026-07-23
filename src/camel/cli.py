@@ -237,6 +237,19 @@ def _cmd_app(_: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_whatsapp(args: argparse.Namespace) -> int:
+    import asyncio as _a
+    from . import whatsapp
+    if args.wa_cmd == "bot":
+        try:
+            _a.run(whatsapp.run_bot(headless=not args.show))
+        except KeyboardInterrupt:
+            print("\n  bot stopped.")
+    else:  # connect
+        _a.run(whatsapp.connect())
+    return 0
+
+
 def _cmd_jobs(args: argparse.Namespace) -> int:
     from . import scheduler
     if args.jobs_cmd == "add":
@@ -334,6 +347,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("app", help="open the desktop window").set_defaults(fn=_cmd_app)
     sub.add_parser("see", help="show every window + screenshot what you see").set_defaults(fn=_cmd_see)
+
+    wa = sub.add_parser("whatsapp", help="chat with Camel AI over WhatsApp (experimental)")
+    was = wa.add_subparsers(dest="wa_cmd")
+    was.add_parser("connect", help="scan the QR to link WhatsApp (one time)")
+    wab = was.add_parser("bot", help="run the WhatsApp responder")
+    wab.add_argument("--show", action="store_true", help="show the browser")
+    wa.set_defaults(fn=_cmd_whatsapp, wa_cmd="connect")
 
     jb = sub.add_parser("jobs", help="schedule autonomous recurring jobs")
     jbs = jb.add_subparsers(dest="jobs_cmd")
