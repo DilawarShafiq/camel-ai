@@ -37,6 +37,9 @@
               border-radius:12px; padding:1rem 1.2rem; font-size:.95rem; }
   .feat h3 { margin:.2rem 0 .4rem; font-size:1rem; }
   a { color:var(--accent); }
+  code { background:var(--card); border:1px solid var(--border); padding:.12rem .4rem;
+         border-radius:5px; font-size:.9em; }
+  .step code { color:var(--accent); }
   footer { color:var(--muted); font-size:.9rem; margin-top:3rem;
            border-top:1px solid var(--border); padding-top:1.5rem; }
 </style>
@@ -65,6 +68,16 @@
     <div class="step"><b>1.</b> Run the one line above (or download the installer).</div>
     <div class="step"><b>2.</b> The wizard connects your AI “brain” — Gemini (free), OpenAI, Claude, OpenRouter, Groq, local models, or any custom endpoint.</div>
     <div class="step"><b>3.</b> Type a goal: <em>“audit every button on my site”</em> or <em>“log into the portal and download my invoices.”</em> Do any 2FA yourself when it pauses.</div>
+  </div>
+
+  <h2 style="font-size:1.15rem;margin:2.6rem 0 .8rem">Everyday commands</h2>
+  <div class="steps">
+    <div class="step"><code>camel dashboard</code> — open the app (audit, tasks, schedule, see windows)</div>
+    <div class="step"><code>camel audit &lt;url&gt;</code> — test a site → HTML report + a fix-brief for your AI coder</div>
+    <div class="step"><code>camel login &lt;url&gt;</code> then <code>camel audit &lt;url&gt; --real-browser</code> — test behind a login</div>
+    <div class="step"><code>camel run "&lt;goal&gt;"</code> — do a task in plain English (pauses for 2FA)</div>
+    <div class="step"><code>camel jobs add "&lt;url&gt;" --at 09:00</code> + <code>camel daemon</code> — run on a schedule</div>
+    <div class="step"><code>pip install aicamel</code> or <code>docker run -p 8765:8765 ghcr.io/dilawarshafiq/camel-ai</code> — other installs</div>
   </div>
 
   <div class="feat">
