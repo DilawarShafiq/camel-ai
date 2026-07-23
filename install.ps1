@@ -7,6 +7,9 @@ $ErrorActionPreference = "Stop"
 Write-Host ""
 Write-Host "  Installing Camel AI ..." -ForegroundColor Cyan
 
+$spec = "camel-ai[desktop,vision] @ git+https://github.com/DilawarShafiq/camel-ai"
+$binDir = Join-Path $env:USERPROFILE ".local\bin"
+
 # 1. Ensure Python
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
   Write-Host "  Python not found. Installing via winget ..." -ForegroundColor Yellow
@@ -15,25 +18,39 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
               [System.Environment]::GetEnvironmentVariable("Path","User")
 }
 
-# 2. Ensure pipx and put its bin dir on PATH for THIS session, so the `camel`
-#    command is found immediately (avoids "'camel' is not recognized").
-python -m pip install --user -q pipx
-python -m pipx ensurepath | Out-Null
-$pipxBin = Join-Path $env:USERPROFILE ".local\bin"
-if ($env:Path -notlike "*$pipxBin*") { $env:Path = "$pipxBin;$env:Path" }
+# 2. Install Camel AI. Prefer uv (fast, reliable) — this is what works cleanly
+#    when uv is present. Only fall back to pipx when uv is absent (so pipx never
+#    tries to use uv as a backend, which is what broke before).
+if (Get-Command uv -ErrorAction SilentlyContinue) {
+  Write-Host "  Installing with uv ..." -ForegroundColor Cyan
+  uv tool install $spec
+  uv tool update-shell | Out-Null
+  Write-Host "  Fetching the browser engine ..." -ForegroundColor Cyan
+  uvx playwright install chromium
+} else {
+  Write-Host "  Installing with pipx ..." -ForegroundColor Cyan
+  python -m pip install --user -q pipx
+  python -m pipx ensurepath | Out-Null
+  python -m pipx install $spec --force
+  Write-Host "  Fetching the browser engine ..." -ForegroundColor Cyan
+  python -m pip install --user -q playwright
+  python -m playwright install chromium
+}
 
-# 3. Install Camel AI straight from GitHub.
-python -m pipx install "camel-ai[desktop,vision] @ git+https://github.com/DilawarShafiq/camel-ai" --force
+# 3. Make the command dir available in THIS session; locate camel.exe.
+if ($env:Path -notlike "*$binDir*") { $env:Path = "$binDir;$env:Path" }
+$camelExe = Join-Path $binDir "camel.exe"
 
-# 4. Install the browser engine (via python — no dependency on the camel PATH).
-python -m playwright install chromium
-
-# 5. First-run setup wizard. Resolve the exe explicitly so it runs even if the
-#    updated PATH hasn't propagated to this session yet.
+# 4. Run setup via the FULL PATH — never rely on PATH having refreshed.
 Write-Host ""
 Write-Host "  Camel AI installed. Starting setup ..." -ForegroundColor Green
-$camelExe = Join-Path $pipxBin "camel.exe"
-if (Test-Path $camelExe) { & $camelExe setup } else { camel setup }
+if (Test-Path $camelExe) { & $camelExe setup }
+elseif (Get-Command camel -ErrorAction SilentlyContinue) { camel setup }
+else { Write-Host "  Installed — open a new terminal to run 'camel setup'." -ForegroundColor Yellow }
 
+# 5. Clear next steps (bare `camel` needs a fresh terminal on Windows).
 Write-Host ""
-Write-Host "  Done! Open a NEW terminal and run:  camel" -ForegroundColor Green
+Write-Host "  Done! Open a NEW terminal, then:" -ForegroundColor Green
+Write-Host "     camel audit https://example.com"
+Write-Host "  If 'camel' isn't found yet, use the full path:" -ForegroundColor DarkGray
+Write-Host "     & `"$camelExe`" audit https://example.com" -ForegroundColor DarkGray
