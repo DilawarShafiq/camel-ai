@@ -26,15 +26,35 @@ class Session:
     """One live browser session. Held by a frontend for the duration of a task."""
 
     headless: bool = False
+    # A persistent profile dir: log in ONCE and stay logged in across runs (your
+    # real sessions/cookies persist here). Fixes "it asks me to log in every time".
+    user_profile: str | None = None
+    # Attach to an already-running Chrome (started with --remote-debugging-port)
+    # to drive YOUR real browser with YOUR existing logins and tabs.
+    cdp_url: str | None = None
     _pw: Any = None
     _browser: Browser | None = None
+    _context: Any = None
     page: Page | None = None
     console_errors: list[ConsoleError] = field(default_factory=list)
 
     async def start(self) -> None:
         self._pw = await async_playwright().start()
-        self._browser = await self._pw.chromium.launch(headless=self.headless)
-        self.page = await self._browser.new_page()
+        if self.cdp_url:
+            # Drive the user's real, already-open Chrome.
+            self._browser = await self._pw.chromium.connect_over_cdp(self.cdp_url)
+            ctx = (self._browser.contexts[0] if self._browser.contexts
+                   else await self._browser.new_context())
+            self.page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+        elif self.user_profile:
+            # Persistent profile — logins/cookies survive between runs.
+            self._context = await self._pw.chromium.launch_persistent_context(
+                self.user_profile, headless=self.headless)
+            self.page = (self._context.pages[0] if self._context.pages
+                         else await self._context.new_page())
+        else:
+            self._browser = await self._pw.chromium.launch(headless=self.headless)
+            self.page = await self._browser.new_page()
         self._wire_listeners(self.page)
 
     def _wire_listeners(self, page: Page) -> None:
@@ -56,7 +76,10 @@ class Session:
                          req.failure or "")))
 
     async def stop(self) -> None:
-        if self._browser:
+        # Don't close a Chrome we merely attached to over CDP — it's the user's.
+        if self._context is not None:
+            await self._context.close()
+        elif self._browser and not self.cdp_url:
             await self._browser.close()
         if self._pw:
             await self._pw.stop()

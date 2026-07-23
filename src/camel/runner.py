@@ -12,12 +12,14 @@ from . import report, findings
 
 
 async def full_web_audit(url: str, *, headless: bool = True,
-                         max_elements: int = 40, enrich: bool = False) -> dict:
+                         max_elements: int = 40, enrich: bool = False,
+                         user_profile: str | None = None) -> dict:
     """Open a site, audit every interactive control, collect console errors,
     and return {summary, audit, console_errors, findings, fix_brief, markdown,
     html}. If `enrich` and a brain is configured, the LLM rewrites each
-    suggested fix into something app-specific."""
-    s = Session(headless=headless)
+    suggested fix into something app-specific. Pass `user_profile` to reuse a
+    persistent, already-logged-in browser profile."""
+    s = Session(headless=headless, user_profile=user_profile)
     await s.start()
     try:
         await s.navigate(url)

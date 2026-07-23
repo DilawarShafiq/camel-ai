@@ -95,11 +95,45 @@ def _try(mod: str) -> bool:
         return False
 
 
+def _browser_profile_dir() -> str:
+    from . import config
+    import os
+    d = os.path.join(str(config.CONFIG_DIR), "browser-profile")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _cmd_login(args: argparse.Namespace) -> int:
+    """Open the persistent browser so you can log into a site ONCE; the session
+    is saved and reused by `camel audit --real-browser`."""
+    from .browser import Session
+    import asyncio as _a
+
+    async def go() -> None:
+        s = Session(headless=False, user_profile=_browser_profile_dir())
+        await s.start()
+        await s.navigate(args.url)
+        print(f"\nA browser opened at {args.url}.")
+        print("Log in (and complete any 2FA), then press Enter here to save it...")
+        try:
+            input()
+        except EOFError:
+            await s.page.wait_for_timeout(120000)
+        await s.stop()
+        print("Session saved. Now run:  camel audit <url> --real-browser")
+
+    _a.run(go())
+    return 0
+
+
 def _cmd_audit(args: argparse.Namespace) -> int:
     from .runner import full_web_audit
+    profile = _browser_profile_dir() if args.real_browser else None
+    # A logged-in run should be visible so you can help if needed.
+    show = args.show or args.real_browser
     result = asyncio.run(full_web_audit(
-        args.url, headless=not args.show, max_elements=args.max,
-        enrich=args.enrich))
+        args.url, headless=not show, max_elements=args.max,
+        enrich=args.enrich, user_profile=profile))
     out = args.out or "camel-report.html"
     with open(out, "w", encoding="utf-8") as f:
         f.write(result["html"])
@@ -233,6 +267,10 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--max-steps", type=int, default=20)
     r.set_defaults(fn=_cmd_run)
 
+    lg = sub.add_parser("login", help="log into a site once; reuse it later")
+    lg.add_argument("url")
+    lg.set_defaults(fn=_cmd_login)
+
     sub.add_parser("app", help="open the desktop window").set_defaults(fn=_cmd_app)
     sub.add_parser("server", help="run the MCP server (stdio)").set_defaults(fn=_cmd_server)
     sub.add_parser("doctor", help="check the environment").set_defaults(fn=_cmd_doctor)
@@ -247,6 +285,8 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--max", type=int, default=40, help="max controls to test")
     a.add_argument("--enrich", action="store_true",
                    help="use your AI brain to write app-specific fixes")
+    a.add_argument("--real-browser", action="store_true",
+                   help="use your saved logged-in profile (see `camel login`)")
     a.add_argument("--show", action="store_true", help="show the browser window")
     a.set_defaults(fn=_cmd_audit)
     return p
