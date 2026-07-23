@@ -118,31 +118,40 @@ class Session:
 
         for el in elements[:max_elements]:
             sel = el["selector"]
-            before_url = self.page.url
-            before_html_len = await self.page.evaluate("document.body.innerHTML.length")
+            # Reset to a clean baseline before EVERY control, so one click's
+            # side effects (an open modal, appended DOM) can't corrupt the next
+            # verdict. This is what makes per-control results trustworthy.
+            try:
+                await self.page.goto(home, wait_until="domcontentloaded")
+                await self.page.wait_for_timeout(150)
+            except Exception:
+                pass
+
+            before = await self.page.evaluate(_STATE_JS)
             errors_before = len(self.console_errors)
             outcome = "no_effect"
             note = ""
             try:
                 await self.page.click(sel, timeout=2500)
                 await self.page.wait_for_timeout(350)
-                after_url = self.page.url
-                after_html_len = await self.page.evaluate("document.body.innerHTML.length")
+                after = await self.page.evaluate(_STATE_JS)
                 dialog = await self.page.evaluate(_MODAL_OPEN_JS)
 
-                if after_url != before_url:
+                if self.page.url != home:
                     outcome = "navigated"
-                    note = after_url
+                    note = self.page.url
                 elif dialog:
                     outcome = "opened_dialog_or_modal"
-                elif abs(after_html_len - before_html_len) > 30:
+                elif (after["elements"] != before["elements"]
+                      or abs(after["len"] - before["len"]) > 12):
                     outcome = "dom_changed"
+                    note = f"+{after['elements'] - before['elements']} elements"
                 else:
                     outcome = "no_effect"  # likely a dead button
 
                 if len(self.console_errors) > errors_before:
                     note = (note + " | " if note else "") + "triggered console error"
-            except Exception as exc:  # not clickable / detached / covered
+            except Exception as exc:  # genuinely not clickable / detached
                 outcome = "not_actionable"
                 note = str(exc).splitlines()[0][:120]
 
@@ -154,13 +163,6 @@ class Session:
                 "note": note,
             })
 
-            # Return to a stable baseline so one click doesn't invalidate the rest.
-            if self.page.url != home:
-                try:
-                    await self.page.goto(home, wait_until="domcontentloaded")
-                except Exception:
-                    pass
-
         dead = [r for r in results if r["outcome"] == "no_effect"]
         return {
             "tested": len(results),
@@ -168,6 +170,16 @@ class Session:
             "results": results,
         }
 
+
+# Cheap page-state fingerprint: total element count + body HTML length.
+# Element count is robust to whitespace noise and reliably reflects real DOM
+# mutations (a new row, an inserted panel).
+_STATE_JS = r"""
+() => ({
+  elements: document.getElementsByTagName('*').length,
+  len: document.body ? document.body.innerHTML.length : 0,
+})
+"""
 
 # JS that enumerates interactive elements with a usable label + unique selector.
 _INTERACTIVE_JS = r"""
