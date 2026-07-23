@@ -82,13 +82,87 @@ class OpenAICompatibleProvider:
         return data["choices"][0]["message"]
 
 
-def provider_from_config() -> "OpenAICompatibleProvider":
+class AnthropicProvider:
+    """Anthropic Claude via the Messages API (NOT OpenAI-compatible). Accepts and
+    returns the same OpenAI-style message/tool shapes the agent loop uses, so it
+    drops in for OpenAICompatibleProvider."""
+
+    def __init__(self, model: str, api_key: str,
+                 base_url: str = "https://api.anthropic.com/v1") -> None:
+        self.model = model
+        self.api_key = api_key
+        self.base_url = base_url.rstrip("/")
+
+    def chat(self, messages: list[dict], tools: list[dict]) -> dict:
+        system, conv = "", []
+        for m in messages:
+            role = m.get("role")
+            if role == "system":
+                system += (m.get("content") or "") + "\n"
+            elif role == "tool":
+                conv.append({"role": "user", "content": [{
+                    "type": "tool_result", "tool_use_id": m.get("tool_call_id"),
+                    "content": m.get("content", "")}]})
+            elif role == "assistant" and m.get("tool_calls"):
+                blocks = []
+                if m.get("content"):
+                    blocks.append({"type": "text", "text": m["content"]})
+                for c in m["tool_calls"]:
+                    fn = c["function"]
+                    blocks.append({"type": "tool_use", "id": c["id"],
+                                   "name": fn["name"],
+                                   "input": json.loads(fn.get("arguments") or "{}")})
+                conv.append({"role": "assistant", "content": blocks})
+            else:
+                conv.append({"role": role or "user", "content": m.get("content", "")})
+
+        an_tools = [{"name": t["function"]["name"],
+                     "description": t["function"].get("description", ""),
+                     "input_schema": t["function"].get("parameters",
+                                                       {"type": "object", "properties": {}})}
+                    for t in tools]
+        payload = {"model": self.model, "max_tokens": 2048, "messages": conv}
+        if system.strip():
+            payload["system"] = system.strip()
+        if an_tools:
+            payload["tools"] = an_tools
+
+        req = urllib.request.Request(
+            f"{self.base_url}/messages", data=json.dumps(payload).encode(),
+            headers={"content-type": "application/json",
+                     "x-api-key": self.api_key,
+                     "anthropic-version": "2023-06-01"})
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read())
+
+        text, tool_calls = "", []
+        for block in data.get("content", []):
+            if block.get("type") == "text":
+                text += block.get("text", "")
+            elif block.get("type") == "tool_use":
+                tool_calls.append({
+                    "id": block["id"], "type": "function",
+                    "function": {"name": block["name"],
+                                 "arguments": json.dumps(block.get("input", {}))}})
+        msg: dict = {"role": "assistant", "content": text or None}
+        if tool_calls:
+            msg["tool_calls"] = tool_calls
+        return msg
+
+
+def provider_from_config():
     """Build the brain from the user's ~/.camel config (set by `camel setup`).
-    Raises a friendly error if setup hasn't been run."""
+    Routes Anthropic to its Messages API; everything else to the OpenAI-compatible
+    client. Raises a friendly error if setup hasn't been run."""
     from . import config
     brain = config.get_brain()
     if not brain:
         raise RuntimeError("No brain configured. Run `camel setup` first.")
+    if brain.get("provider") == "anthropic":
+        return AnthropicProvider(model=brain["model"],
+                                 api_key=brain.get("api_key", ""),
+                                 base_url=brain.get("base_url",
+                                                    "https://api.anthropic.com/v1"))
     return OpenAICompatibleProvider(
         model=brain["model"], base_url=brain["base_url"],
         api_key=brain.get("api_key", "not-needed"))
