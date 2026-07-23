@@ -65,11 +65,20 @@ Set `UISCOUT_HEADLESS=1` to hide the browser window.
 ### Tools exposed
 - `open_page(url)` — navigate
 - `snapshot()` — title, url, every visible interactive element + selector
-- `click(selector)` / `type_text(selector, text)`
+- `click(target)` / `type_text(target, text)` — target by CSS selector **or plain
+  visible text** (e.g. `click("Sign in")`); real controls win over stray text
 - `audit_interactivity(max_elements)` — clicks everything, flags dead controls,
-  navigations, dialogs, DOM changes, console errors
+  navigations, dialogs, DOM changes, console errors (resets to a clean state
+  before each control so verdicts don't contaminate each other)
+- `check_accessibility()` — images without alt, unnamed buttons/links, unlabeled
+  fields, missing page title/lang, duplicate ids (no external library)
 - `get_console_errors()` — JS errors, page errors, failed requests
 - `screenshot()` — full-page PNG path
+- plus `desktop_*`, `vision_*`, and `wait_for_login` (see below)
+
+### Tests
+`pip install -e ".[dev]" && pytest` — offline suite over the report logic and the
+interactivity/accessibility classification (against a local HTML fixture).
 
 ## Use with your own LLM (any model)
 

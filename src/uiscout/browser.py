@@ -75,14 +75,45 @@ class Session:
     async def click(self, selector: str) -> dict[str, Any]:
         assert self.page
         before = self.page.url
-        await self.page.click(selector, timeout=5000)
+        loc = await self._locate(selector)
+        await loc.scroll_into_view_if_needed(timeout=4000)
+        await loc.click(timeout=6000)
         await self.page.wait_for_timeout(400)
         return {"clicked": selector, "url_before": before, "url_after": self.page.url}
 
     async def type_text(self, selector: str, text: str) -> dict[str, Any]:
         assert self.page
-        await self.page.fill(selector, text, timeout=5000)
+        loc = await self._locate(selector)
+        await loc.scroll_into_view_if_needed(timeout=4000)
+        await loc.fill(text, timeout=6000)
         return {"filled": selector, "text": text}
+
+    async def _locate(self, selector: str) -> Any:
+        """Resolve a target flexibly: a CSS selector, or — if it's plain words —
+        the best matching control. Lets callers say click("Sign in") without
+        hunting for the exact selector. Real controls (buttons, links, labelled
+        fields) win over stray text that happens to match."""
+        assert self.page
+        looks_css = any(c in selector for c in "#.[]>:") or selector.startswith(
+            ("button", "input", "a", "div", "span", "//"))
+        if looks_css:
+            return self.page.locator(selector).first
+        # Priority order: prefer an actionable, accessible control; fall back to
+        # plain text only if nothing better matches.
+        candidates = [
+            self.page.get_by_role("button", name=selector, exact=False),
+            self.page.get_by_role("link", name=selector, exact=False),
+            self.page.get_by_label(selector, exact=False),
+            self.page.get_by_placeholder(selector, exact=False),
+            self.page.get_by_text(selector, exact=False),
+        ]
+        for cand in candidates:
+            try:
+                if await cand.count() > 0:
+                    return cand.first
+            except Exception:
+                continue
+        return self.page.locator(f"text={selector}").first
 
     # --- observation -------------------------------------------------------
 
@@ -170,6 +201,18 @@ class Session:
             "results": results,
         }
 
+    async def check_accessibility(self) -> dict[str, Any]:
+        """Flag common accessibility / UX defects a careful reviewer would catch,
+        with no external library: images missing alt text, buttons/links with no
+        accessible name, form fields with no label, missing page <title> or lang,
+        and duplicate ids. Each issue names the offending element."""
+        assert self.page
+        issues = await self.page.evaluate(_A11Y_JS)
+        by_type: dict[str, int] = {}
+        for i in issues:
+            by_type[i["type"]] = by_type.get(i["type"], 0) + 1
+        return {"issue_count": len(issues), "by_type": by_type, "issues": issues}
+
 
 # Cheap page-state fingerprint: total element count + body HTML length.
 # Element count is robust to whitespace noise and reliably reflects real DOM
@@ -179,6 +222,51 @@ _STATE_JS = r"""
   elements: document.getElementsByTagName('*').length,
   len: document.body ? document.body.innerHTML.length : 0,
 })
+"""
+
+# Dependency-free accessibility/UX checks. Mirrors the highest-signal rules from
+# tools like axe-core, but needs nothing external.
+_A11Y_JS = r"""
+() => {
+  const issues = [];
+  const add = (type, detail, sel) => issues.push({type, detail, selector: sel});
+  const desc = (el) => {
+    if (el.id) return '#' + el.id;
+    const t = (el.getAttribute('name') || el.className || '').toString().trim().split(/\s+/)[0];
+    return el.tagName.toLowerCase() + (t ? '.' + t : '');
+  };
+  const name = (el) => (el.getAttribute('aria-label') || el.innerText ||
+    el.getAttribute('title') || el.value || '').trim();
+
+  if (!document.title || !document.title.trim())
+    add('missing-page-title', 'The page has no <title>.', 'head');
+  if (!document.documentElement.getAttribute('lang'))
+    add('missing-lang', 'The <html> element has no lang attribute.', 'html');
+
+  document.querySelectorAll('img').forEach(img => {
+    if (!img.hasAttribute('alt')) add('image-no-alt',
+      'Image has no alt attribute (invisible to screen readers).', desc(img));
+  });
+  document.querySelectorAll('button, [role=button], a[href]').forEach(el => {
+    if (!name(el)) add('control-no-name',
+      'Button/link has no accessible text.', desc(el));
+  });
+  document.querySelectorAll('input:not([type=hidden]), select, textarea').forEach(el => {
+    const id = el.id;
+    const labelled = (id && document.querySelector('label[for="' + CSS.escape(id) + '"]'))
+      || el.closest('label') || el.getAttribute('aria-label') || el.getAttribute('placeholder');
+    if (!labelled) add('input-no-label',
+      'Form field has no associated label.', desc(el));
+  });
+  const seen = {};
+  document.querySelectorAll('[id]').forEach(el => {
+    seen[el.id] = (seen[el.id] || 0) + 1;
+  });
+  Object.keys(seen).filter(k => seen[k] > 1).forEach(k =>
+    add('duplicate-id', 'id "' + k + '" used ' + seen[k] + ' times.', '#' + k));
+
+  return issues.slice(0, 100);
+}
 """
 
 # JS that enumerates interactive elements with a usable label + unique selector.

@@ -19,6 +19,7 @@ async def full_web_audit(url: str, *, headless: bool = True,
     await s.start()
     try:
         await s.navigate(url)
+        a11y = await s.check_accessibility()
         audit = await s.audit_interactivity(max_elements=max_elements)
         errors = s.get_console_errors()
     finally:
@@ -26,9 +27,11 @@ async def full_web_audit(url: str, *, headless: bool = True,
 
     return {
         "url": url,
-        "summary": report.summarize(audit, errors),
+        "summary": {**report.summarize(audit, errors),
+                    "a11y_issues": a11y["issue_count"]},
         "audit": audit,
         "console_errors": errors,
-        "markdown": report.to_markdown(url, audit, errors),
-        "html": report.to_html(url, audit, errors),
+        "accessibility": a11y,
+        "markdown": report.to_markdown(url, audit, errors, a11y=a11y),
+        "html": report.to_html(url, audit, errors, a11y=a11y),
     }

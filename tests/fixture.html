@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>fixture</title></head>
+<body>
+  <h2>Add a row</h2>
+  <button id="add" onclick="document.getElementById('log').innerHTML += '<p>row</p>'">Add a row</button>
+  <button id="open" onclick="document.getElementById('dlg').showModal()">Open settings</button>
+  <button id="dead">Dead button</button>
+
+  <!-- accessibility problems on purpose -->
+  <img src="x.png">
+  <input type="text">
+
+  <div id="log"></div>
+  <dialog id="dlg"><button onclick="this.closest('dialog').close()">Close</button></dialog>
+</body>
+</html>

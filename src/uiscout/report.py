@@ -40,7 +40,7 @@ def _score(working: int, total: int, errors: int) -> int:
 
 
 def to_markdown(url: str, audit: dict, console_errors: list[dict] | None = None,
-                title: str = "UI/UX Audit") -> str:
+                title: str = "UI/UX Audit", a11y: dict | None = None) -> str:
     s = summarize(audit, console_errors)
     console_errors = console_errors or []
     lines = [
@@ -64,11 +64,16 @@ def to_markdown(url: str, audit: dict, console_errors: list[dict] | None = None,
         for e in console_errors:
             lines.append(f"- **{e.get('kind','')}**: {_esc(e.get('text',''))} "
                          f"`{_esc(e.get('location',''))}`")
+    if a11y and a11y.get("issues"):
+        lines += ["", f"## Accessibility ({a11y['issue_count']} issues)", ""]
+        for i in a11y["issues"]:
+            lines.append(f"- **{i['type']}** — {_esc(i['detail'])} "
+                         f"`{_esc(i['selector'])}`")
     return "\n".join(lines)
 
 
 def to_html(url: str, audit: dict, console_errors: list[dict] | None = None,
-            title: str = "UI/UX Audit") -> str:
+            title: str = "UI/UX Audit", a11y: dict | None = None) -> str:
     s = summarize(audit, console_errors)
     console_errors = console_errors or []
     color = "#16a34a" if s["score"] >= 80 else "#d97706" if s["score"] >= 50 else "#dc2626"
@@ -85,6 +90,13 @@ def to_html(url: str, audit: dict, console_errors: list[dict] | None = None,
                         f"<code>{_h(e.get('location',''))}</code></li>"
                         for e in console_errors)
         err_html = f"<h2>Console errors</h2><ul class='err'>{items}</ul>"
+    a11y_html = ""
+    if a11y and a11y.get("issues"):
+        items = "".join(f"<li><b>{_h(i['type'])}</b> — {_h(i['detail'])} "
+                        f"<code>{_h(i['selector'])}</code></li>"
+                        for i in a11y["issues"])
+        a11y_html = (f"<h2>Accessibility ({a11y['issue_count']} issues)</h2>"
+                     f"<ul class='err'>{items}</ul>")
     return f"""<!doctype html><meta charset="utf-8">
 <title>{_h(title)}</title>
 <style>
@@ -106,6 +118,7 @@ def to_html(url: str, audit: dict, console_errors: list[dict] | None = None,
 <table><thead><tr><th>Control</th><th>Role</th><th>Outcome</th><th>Note</th></tr></thead>
 <tbody>{rows}</tbody></table>
 {err_html}
+{a11y_html}
 """
 
 

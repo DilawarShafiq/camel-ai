@@ -74,6 +74,15 @@ async def audit_interactivity(max_elements: int = 40) -> dict:
 
 
 @mcp.tool()
+async def check_accessibility() -> dict:
+    """Flag accessibility / UX defects on the current page a careful reviewer
+    would catch: images without alt text, buttons/links with no accessible name,
+    form fields with no label, missing page title or lang, duplicate ids."""
+    s = await _require()
+    return await s.check_accessibility()
+
+
+@mcp.tool()
 async def get_console_errors() -> list[dict]:
     """Return JS console errors/warnings, uncaught page errors, and failed
     network requests collected since the session started."""
