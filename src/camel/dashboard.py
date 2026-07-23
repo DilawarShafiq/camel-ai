@@ -171,10 +171,19 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  <div class="card">
   <h2>Scheduled jobs</h2>
   <div class="row">
-   <input type="text" id="jtask" placeholder="https://mysite.com" style="flex:2;min-width:180px">
-   <input type="text" id="jat" placeholder="09:00" value="09:00" style="width:80px">
-   <button id="jadd">+ Add daily</button>
+   <select id="jkind" title="what the job does">
+    <option value="audit">Audit a site</option>
+    <option value="goal">Do a task</option>
+   </select>
+   <input type="text" id="jtask" placeholder="https://mysite.com" style="flex:2;min-width:200px">
+   <select id="jevery" title="how often">
+    <option value="day">daily at</option>
+    <option value="hour">hourly</option>
+   </select>
+   <input type="text" id="jat" placeholder="09:00" value="09:00" style="width:74px">
+   <button id="jadd">+ Add</button>
   </div>
+  <p class="meta" id="jhint">“Audit a site” tests a URL on a schedule. Pick “Do a task” to run a plain-English goal (needs a brain).</p>
   <div id="joblist" style="margin-top:.7rem"></div>
   <p class="meta">Run <code>camel daemon</code> in a terminal to execute jobs unattended.</p>
  </div>
@@ -216,11 +225,17 @@ document.getElementById('dorun').onclick=async()=>{
 };
 async function loadJobs(){const r=await fetch('/api/jobs');const d=await r.json();const el=document.getElementById('joblist');el.innerHTML='';
  (d.jobs||[]).forEach(j=>{const row=document.createElement('div');row.className='win';
-  row.innerHTML=`• <b>${j.id}</b> ${j.kind} "${j.task}" @ ${j.at} <a href="#" data-id="${j.id}" style="margin-left:.5rem">remove</a>`;
+  const when=j.every==='hour'?'hourly':('daily '+j.at);
+  row.innerHTML=`• <b>${j.id}</b> ${j.kind}: "${j.task}" — ${when} <a href="#" data-id="${j.id}" style="margin-left:.5rem">remove</a>`;
   row.querySelector('a').onclick=async(e)=>{e.preventDefault();await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'remove',id:j.id})});loadJobs();};
   el.appendChild(row);});}
-document.getElementById('jadd').onclick=async()=>{const task=document.getElementById('jtask').value;const at=document.getElementById('jat').value||'09:00';
- if(!task)return; await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',task,kind:'audit',every:'day',at})});
+const jkind=document.getElementById('jkind'), jevery=document.getElementById('jevery');
+jkind.onchange=()=>{document.getElementById('jtask').placeholder = jkind.value==='goal'
+ ? 'e.g. log into my portal and email me any broken buttons' : 'https://mysite.com';};
+document.getElementById('jadd').onclick=async()=>{const task=document.getElementById('jtask').value;
+ const at=document.getElementById('jat').value||'09:00'; if(!task)return;
+ await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({action:'add',task,kind:jkind.value,every:jevery.value,at})});
  document.getElementById('jtask').value=''; loadJobs();};
 loadJobs();
 document.getElementById('seebtn').onclick=async()=>{
