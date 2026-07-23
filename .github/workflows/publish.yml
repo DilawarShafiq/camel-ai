@@ -1,10 +1,11 @@
 name: Publish to PyPI
-# Publishes on every version tag (e.g. `git tag v0.1.0 && git push --tags`).
-# Uses PyPI Trusted Publishing (OIDC) — no API token to store. Configure the
-# publisher once at https://pypi.org/manage/account/publishing/ for this repo.
+# MANUAL trigger only. Camel AI installs from GitHub, so PyPI is optional.
+# Note: the name "camel-ai" is already taken on PyPI by another project — to
+# publish here, first change `name` in pyproject.toml to an available name and
+# configure PyPI Trusted Publishing at
+# https://pypi.org/manage/account/publishing/ for this repo.
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch:
 
 jobs:
   build-and-publish:
