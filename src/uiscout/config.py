@@ -21,6 +21,10 @@ CONFIG_PATH = CONFIG_DIR / "config.json"
 
 # Each preset: where to get a key, the endpoint, and a sensible default model
 # (all user-overridable in the wizard).
+# uiscout speaks the OpenAI-compatible chat API, which nearly every major LLM
+# provider exposes — so this list is "most of the world's LLMs", and OpenRouter
+# alone routes to hundreds more (Claude, GPT, Llama, Mistral, Qwen, ...).
+# `custom` lets a user point at ANY OpenAI-compatible endpoint we didn't list.
 PROVIDERS: dict[str, dict[str, Any]] = {
     "gemini": {
         "label": "Google Gemini  (FREE tier — no credit card)",
@@ -30,25 +34,67 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "free": True,
     },
     "openrouter": {
-        "label": "OpenRouter  (any model, incl. Claude/GPT)",
+        "label": "OpenRouter  (ONE key → hundreds of models: Claude, GPT, Llama…)",
         "base_url": "https://openrouter.ai/api/v1",
         "model": "anthropic/claude-3.5-sonnet",
         "key_url": "https://openrouter.ai/keys",
         "free": False,
     },
     "openai": {
-        "label": "OpenAI",
+        "label": "OpenAI  (GPT models)",
         "base_url": "https://api.openai.com/v1",
         "model": "gpt-4o",
         "key_url": "https://platform.openai.com/api-keys",
         "free": False,
     },
+    "anthropic": {
+        "label": "Anthropic Claude",
+        "base_url": "https://api.anthropic.com/v1",
+        "model": "claude-sonnet-4-5",
+        "key_url": "https://console.anthropic.com/settings/keys",
+        "free": False,
+    },
+    "groq": {
+        "label": "Groq  (very fast, free tier)",
+        "base_url": "https://api.groq.com/openai/v1",
+        "model": "llama-3.3-70b-versatile",
+        "key_url": "https://console.groq.com/keys",
+        "free": True,
+    },
+    "mistral": {
+        "label": "Mistral",
+        "base_url": "https://api.mistral.ai/v1",
+        "model": "mistral-large-latest",
+        "key_url": "https://console.mistral.ai/api-keys",
+        "free": False,
+    },
+    "deepseek": {
+        "label": "DeepSeek",
+        "base_url": "https://api.deepseek.com/v1",
+        "model": "deepseek-chat",
+        "key_url": "https://platform.deepseek.com/api_keys",
+        "free": False,
+    },
+    "together": {
+        "label": "Together AI  (open models)",
+        "base_url": "https://api.together.xyz/v1",
+        "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        "key_url": "https://api.together.ai/settings/api-keys",
+        "free": False,
+    },
     "local": {
-        "label": "Local model via Ollama  (offline, no key)",
+        "label": "Local model via Ollama / LM Studio  (offline, no key)",
         "base_url": "http://localhost:11434/v1",
         "model": "llama3.1",
         "key_url": None,
         "free": True,
+    },
+    "custom": {
+        "label": "Custom  (any OpenAI-compatible endpoint)",
+        "base_url": "",
+        "model": "",
+        "key_url": None,
+        "free": False,
     },
 }
 
@@ -74,15 +120,20 @@ def save_config(cfg: dict[str, Any]) -> Path:
     return CONFIG_PATH
 
 
-def set_brain(provider: str, api_key: str = "", model: str = "") -> dict[str, Any]:
+def set_brain(provider: str, api_key: str = "", model: str = "",
+              base_url: str = "") -> dict[str, Any]:
     if provider not in PROVIDERS:
         raise ValueError(f"Unknown provider {provider!r}. "
                          f"Choose from: {', '.join(PROVIDERS)}")
     preset = PROVIDERS[provider]
+    resolved_base = base_url or preset["base_url"]
+    if not resolved_base:
+        raise ValueError("This provider needs a base_url (OpenAI-compatible "
+                         "endpoint). Pass base_url=...")
     cfg = load_config()
     cfg["brain"] = {
         "provider": provider,
-        "base_url": preset["base_url"],
+        "base_url": resolved_base,
         "model": model or preset["model"],
         "api_key": api_key or "not-needed",
     }

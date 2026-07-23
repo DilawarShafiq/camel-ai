@@ -8,7 +8,7 @@ MCP host (see integrations/claude/) which orchestrates these same primitives.
 from __future__ import annotations
 
 from .browser import Session
-from . import report
+from . import report, findings
 
 
 async def full_web_audit(url: str, *, headless: bool = True,
@@ -25,13 +25,17 @@ async def full_web_audit(url: str, *, headless: bool = True,
     finally:
         await s.stop()
 
+    summary = {**report.summarize(audit, errors), "a11y_issues": a11y["issue_count"]}
+    found = findings.generate(url, audit, errors, a11y)
+    fix_brief = findings.to_fix_brief(url, found, summary)
     return {
         "url": url,
-        "summary": {**report.summarize(audit, errors),
-                    "a11y_issues": a11y["issue_count"]},
+        "summary": summary,
         "audit": audit,
         "console_errors": errors,
         "accessibility": a11y,
-        "markdown": report.to_markdown(url, audit, errors, a11y=a11y),
-        "html": report.to_html(url, audit, errors, a11y=a11y),
+        "findings": found,
+        "fix_brief": fix_brief,               # hand this to a fixing AI/developer
+        "markdown": report.to_markdown(url, audit, errors, a11y=a11y, findings=found),
+        "html": report.to_html(url, audit, errors, a11y=a11y, findings=found),
     }

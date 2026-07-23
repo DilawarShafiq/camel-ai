@@ -40,7 +40,8 @@ def _score(working: int, total: int, errors: int) -> int:
 
 
 def to_markdown(url: str, audit: dict, console_errors: list[dict] | None = None,
-                title: str = "UI/UX Audit", a11y: dict | None = None) -> str:
+                title: str = "UI/UX Audit", a11y: dict | None = None,
+                findings: list[dict] | None = None) -> str:
     s = summarize(audit, console_errors)
     console_errors = console_errors or []
     lines = [
@@ -69,11 +70,15 @@ def to_markdown(url: str, audit: dict, console_errors: list[dict] | None = None,
         for i in a11y["issues"]:
             lines.append(f"- **{i['type']}** — {_esc(i['detail'])} "
                          f"`{_esc(i['selector'])}`")
+    if findings is not None:
+        from .findings import to_markdown_section
+        lines.append(to_markdown_section(findings))
     return "\n".join(lines)
 
 
 def to_html(url: str, audit: dict, console_errors: list[dict] | None = None,
-            title: str = "UI/UX Audit", a11y: dict | None = None) -> str:
+            title: str = "UI/UX Audit", a11y: dict | None = None,
+            findings: list[dict] | None = None) -> str:
     s = summarize(audit, console_errors)
     console_errors = console_errors or []
     color = "#16a34a" if s["score"] >= 80 else "#d97706" if s["score"] >= 50 else "#dc2626"
@@ -97,6 +102,25 @@ def to_html(url: str, audit: dict, console_errors: list[dict] | None = None,
                         for i in a11y["issues"])
         a11y_html = (f"<h2>Accessibility ({a11y['issue_count']} issues)</h2>"
                      f"<ul class='err'>{items}</ul>")
+    fix_html = ""
+    if findings:
+        sev_color = {"critical": "#dc2626", "high": "#ea580c",
+                     "medium": "#d97706", "low": "#6b7280"}
+        cards = ""
+        for f in findings:
+            c = sev_color.get(f["severity"], "#6b7280")
+            cards += (
+                f'<div class="finding"><div class="sev" style="background:{c}">'
+                f'{_h(f["id"])} · {_h(f["severity"].upper())}</div>'
+                f'<h3>{_h(f["title"])}</h3>'
+                f'<p><b>Where:</b> <code>{_h(f["location"] or "page")}</code></p>'
+                f'<p><b>Evidence:</b> {_h(f["evidence"])}</p>'
+                f'<p><b>Impact:</b> {_h(f["impact"])}</p>'
+                f'<p class="fix"><b>Suggested fix:</b> {_h(f["suggested_fix"])}</p>'
+                f'</div>')
+        fix_html = (f"<h2>Developer fix list ({len(findings)} findings)</h2>"
+                    f"<p class='meta'>Ranked most-severe first — hand this to an "
+                    f"AI coder or developer.</p>{cards}")
     return f"""<!doctype html><meta charset="utf-8">
 <title>{_h(title)}</title>
 <style>
@@ -106,8 +130,13 @@ def to_html(url: str, audit: dict, console_errors: list[dict] | None = None,
  th,td{{border:1px solid #e5e7eb;padding:.5rem .6rem;text-align:left;font-size:14px}}
  th{{background:#f9fafb}} tr.bad{{background:#fef2f2}}
  .err code{{color:#6b7280}} .meta{{color:#6b7280}}
+ .finding{{border:1px solid #e5e7eb;border-radius:8px;padding:.8rem 1rem;margin:.7rem 0}}
+ .finding h3{{margin:.3rem 0 .5rem}} .finding p{{margin:.25rem 0;font-size:14px}}
+ .finding .fix{{color:#166534}} .sev{{display:inline-block;color:#fff;font-size:12px;
+   font-weight:700;padding:.1rem .5rem;border-radius:4px}}
  @media(prefers-color-scheme:dark){{body{{background:#0b0f19;color:#e5e7eb}}
-   th{{background:#111827}} td,th{{border-color:#1f2937}} tr.bad{{background:#3f1d1d}}}}
+   th{{background:#111827}} td,th{{border-color:#1f2937}} tr.bad{{background:#3f1d1d}}
+   .finding{{border-color:#1f2937}} .finding .fix{{color:#4ade80}}}}
 </style>
 <h1>{_h(title)}</h1>
 <p class="meta">Target: <b>{_h(url)}</b></p>
@@ -117,6 +146,7 @@ def to_html(url: str, audit: dict, console_errors: list[dict] | None = None,
  {s['console_errors']} console errors</p>
 <table><thead><tr><th>Control</th><th>Role</th><th>Outcome</th><th>Note</th></tr></thead>
 <tbody>{rows}</tbody></table>
+{fix_html}
 {err_html}
 {a11y_html}
 """

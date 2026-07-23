@@ -94,8 +94,13 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     s = result["summary"]
     print(f"Audited {args.url}")
     print(f"  score {s['score']}/100 · {s['tested']} tested · "
-          f"{s['dead_controls']} dead · {s['console_errors']} console errors")
+          f"{s['dead_controls']} dead · {s['console_errors']} console errors · "
+          f"{len(result['findings'])} findings")
     print(f"  report -> {out}")
+    brief_path = args.fix_brief or (out.rsplit(".", 1)[0] + ".fixbrief.json")
+    with open(brief_path, "w", encoding="utf-8") as f:
+        json.dump(result["fix_brief"], f, indent=2, default=str)
+    print(f"  fix brief (for an AI coder) -> {brief_path}")
     if args.json:
         with open(args.json, "w", encoding="utf-8") as f:
             json.dump({k: v for k, v in result.items() if k != "html"}, f,
@@ -112,7 +117,8 @@ def _cmd_setup(args: argparse.Namespace) -> int:
     # Non-interactive path (flags) — for scripts/CI.
     if args.provider:
         brain = config.set_brain(args.provider, api_key=args.api_key or "",
-                                 model=args.model or "")
+                                 model=args.model or "",
+                                 base_url=getattr(args, "base_url", "") or "")
         print(f"  Saved: {brain['provider']} · {brain['model']}")
         print(f"  Config: {config.CONFIG_PATH}")
         return 0
@@ -129,21 +135,31 @@ def _cmd_setup(args: argparse.Namespace) -> int:
         prov_key = config.DEFAULT_PROVIDER
     preset = config.PROVIDERS[prov_key]
 
+    base_url = ""
+    if prov_key == "custom":
+        try:
+            base_url = input("  OpenAI-compatible base URL "
+                             "(e.g. https://host/v1): ").strip()
+        except EOFError:
+            base_url = ""
+
     api_key = ""
-    if preset["key_url"]:
-        print(f"\n  Get a free key here:  {preset['key_url']}")
+    if preset["key_url"] or prov_key == "custom":
+        if preset["key_url"]:
+            print(f"\n  Get a key here:  {preset['key_url']}")
         try:
             api_key = input("  Paste your API key: ").strip()
         except EOFError:
             api_key = ""
 
-    model = ""
+    default_model = preset["model"] or "(required)"
     try:
-        model = input(f"  Model (default {preset['model']}): ").strip()
+        model = input(f"  Model (default {default_model}): ").strip()
     except EOFError:
         model = ""
 
-    brain = config.set_brain(prov_key, api_key=api_key, model=model)
+    brain = config.set_brain(prov_key, api_key=api_key, model=model,
+                             base_url=base_url)
     print(f"\n  ✓ Brain set: {brain['provider']} · {brain['model']}")
     print(f"  ✓ Saved to {config.CONFIG_PATH}")
     print("\n  Try it:  uiscout run \"audit every button on https://example.com\"\n")
@@ -185,9 +201,11 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd")
 
     st = sub.add_parser("setup", help="first-run wizard: connect your AI brain")
-    st.add_argument("--provider", help="gemini|openrouter|openai|local (skip prompts)")
+    st.add_argument("--provider", help="gemini|openrouter|openai|anthropic|groq|"
+                    "mistral|deepseek|together|local|custom (skip prompts)")
     st.add_argument("--api-key", help="API key (with --provider)")
     st.add_argument("--model", help="override the model")
+    st.add_argument("--base-url", help="OpenAI-compatible endpoint (for custom)")
     st.set_defaults(fn=_cmd_setup)
 
     r = sub.add_parser("run", help="do a plain-English goal with your brain")
@@ -204,6 +222,7 @@ def build_parser() -> argparse.ArgumentParser:
     a = sub.add_parser("audit", help="run a full web audit and write a report")
     a.add_argument("url")
     a.add_argument("--out", help="HTML report path (default uiscout-report.html)")
+    a.add_argument("--fix-brief", help="machine-readable fix brief JSON path")
     a.add_argument("--json", help="also write raw results to this JSON path")
     a.add_argument("--max", type=int, default=40, help="max controls to test")
     a.add_argument("--show", action="store_true", help="show the browser window")

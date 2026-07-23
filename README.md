@@ -31,9 +31,11 @@ curl -fsSL https://raw.githubusercontent.com/yourname/uiscout/main/install.sh | 
 ```
 
 The installer sets everything up (Python, the browser engine) and launches a
-**setup wizard**. Pick a brain and paste one key — the default is **Google
-Gemini's free tier (no credit card)**, so it costs nothing and there's no hosted
-service in the middle. Then:
+**setup wizard**. Pick any brain and paste one key — **Gemini, OpenAI, Anthropic
+Claude, OpenRouter (hundreds of models), Groq, Mistral, DeepSeek, Together, a
+local Ollama model, or any custom OpenAI-compatible endpoint.** The default is
+**Gemini's free tier (no credit card)** so it costs nothing out of the box, but
+you're never locked to one provider. Then:
 
 ```bash
 uiscout                     # opens the app (or the wizard on first run)
@@ -110,6 +112,23 @@ print(asyncio.run(run_audit(prov, "Audit every button on http://localhost:3000")
 ```
 
 Any LLM works — implement `LLMProvider.chat(messages, tools) -> message`.
+
+## Testing → a fix brief for an AI coder
+
+The point of the testing side isn't a report a human skims — it's a **structured
+hand-off another AI/developer can act on** to repair the app. Every run produces
+a **fix brief** (`schema: uiscout.fixbrief/v1`): ranked findings, each with a
+`location`, the `evidence` observed, the user `impact`, and a concrete
+`suggested_fix`. Duplicate issues are collapsed with an occurrence count.
+
+```bash
+uiscout audit https://mysite.com --out report.html --fix-brief fixes.json
+```
+
+Then hand `fixes.json` to Claude Code / any coding agent — or pull it live via
+the `fix_brief` MCP tool — and it fixes the app into a logical, non-broken
+product. Works across any industry app (medical billing, financial, marketing…)
+that runs in a browser, on any OS.
 
 ## Three drivers — web, desktop, anything
 

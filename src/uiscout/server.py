@@ -74,6 +74,23 @@ async def audit_interactivity(max_elements: int = 40) -> dict:
 
 
 @mcp.tool()
+async def fix_brief(max_elements: int = 40) -> dict:
+    """Run a full audit of the current page and return a machine-readable FIX
+    BRIEF (schema uiscout.fixbrief/v1): ranked findings, each with location,
+    evidence, user impact, and a suggested fix. Hand this to a coding agent to
+    repair the app into a logical, non-broken product."""
+    s = await _require()
+    from . import report as _report, findings as _findings
+    a11y = await s.check_accessibility()
+    audit = await s.audit_interactivity(max_elements=max_elements)
+    errors = s.get_console_errors()
+    summary = {**_report.summarize(audit, errors),
+               "a11y_issues": a11y["issue_count"]}
+    found = _findings.generate(s.page.url, audit, errors, a11y)
+    return _findings.to_fix_brief(s.page.url, found, summary)
+
+
+@mcp.tool()
 async def check_accessibility() -> dict:
     """Flag accessibility / UX defects on the current page a careful reviewer
     would catch: images without alt text, buttons/links with no accessible name,
