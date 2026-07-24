@@ -149,7 +149,7 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  .hidden{display:none}.spin{color:var(--muted)}
  a{color:var(--accent)}
 </style></head><body>
-<header><span style="font-size:1.4rem">🐫</span><h1>Camel AI</h1><span class="badge" id="brain">…</span></header>
+<header><span style="font-size:1.4rem;display:inline-block;transform:scaleX(-1)">🐫</span><h1>Camel AI</h1><span class="badge" id="brain">…</span></header>
 <main>
  <div class="card">
   <h2>What do you want to do?</h2>

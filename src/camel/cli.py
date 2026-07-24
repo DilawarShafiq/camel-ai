@@ -279,13 +279,49 @@ def _cmd_jobs(args: argparse.Namespace) -> int:
     return 0
 
 
+def _camel_exe() -> str:
+    import shutil
+    return (shutil.which("camel")
+            or os.path.join(os.path.expanduser("~"), ".local", "bin",
+                            "camel.exe" if sys.platform == "win32" else "camel"))
+
+
 def _cmd_daemon(args: argparse.Namespace) -> int:
+    if getattr(args, "install", False):
+        return _daemon_autostart(True)
+    if getattr(args, "uninstall", False):
+        return _daemon_autostart(False)
     from . import scheduler
     import asyncio as _a
     try:
         _a.run(scheduler.run_forever(interval_seconds=args.interval))
     except KeyboardInterrupt:
         print("\n  daemon stopped.")
+    return 0
+
+
+def _daemon_autostart(install: bool) -> int:
+    """Register (or remove) the scheduler daemon to start automatically at login,
+    so scheduled jobs run without keeping a terminal open."""
+    import subprocess
+    exe = _camel_exe()
+    if sys.platform == "win32":
+        if install:
+            subprocess.run(["schtasks", "/Create", "/TN", "CamelAIDaemon",
+                            "/TR", f'"{exe}" daemon', "/SC", "ONLOGON", "/F"],
+                           check=False)
+            print("  ✓ Camel AI daemon will now start at login (Task Scheduler).")
+        else:
+            subprocess.run(["schtasks", "/Delete", "/TN", "CamelAIDaemon", "/F"],
+                           check=False)
+            print("  ✓ Auto-start removed.")
+        return 0
+    # macOS / Linux: print the ready-to-use line (cron/launchd vary by system).
+    if install:
+        print("  Add this line to your crontab (`crontab -e`) to run at boot:")
+        print(f"    @reboot {exe} daemon")
+    else:
+        print("  Remove the '@reboot ... camel daemon' line from your crontab.")
     return 0
 
 
@@ -383,6 +419,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     dm = sub.add_parser("daemon", help="run scheduled jobs autonomously")
     dm.add_argument("--interval", type=int, default=60, help="check interval (s)")
+    dm.add_argument("--install", action="store_true", help="auto-start at login")
+    dm.add_argument("--uninstall", action="store_true", help="remove auto-start")
     dm.set_defaults(fn=_cmd_daemon)
 
     dash = sub.add_parser("dashboard", help="open the web dashboard (enterprise UI)")
@@ -410,7 +448,20 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+_SUBCOMMANDS = {"setup", "run", "audit", "doctor", "mcp-config", "server", "app",
+                "see", "dashboard", "jobs", "daemon", "whatsapp", "login"}
+
+
 def main() -> None:
+    # Agentic CLI: `camel <plain-English task>` with no known subcommand runs it
+    # through the agent — e.g. `camel "audit my site"` or `camel "log in and
+    # download invoices"`. No subcommand to memorize.
+    argv = sys.argv[1:]
+    if argv and not argv[0].startswith("-") and argv[0] not in _SUBCOMMANDS:
+        goal = " ".join(argv)
+        ns = argparse.Namespace(goal=goal, show=False, max_steps=20)
+        sys.exit(_cmd_run(ns))
+
     parser = build_parser()
     args = parser.parse_args()
     if not getattr(args, "cmd", None):
