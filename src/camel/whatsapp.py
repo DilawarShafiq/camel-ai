@@ -50,30 +50,18 @@ async def connect(headless: bool = False) -> bool:
 
 
 async def _handle(text: str) -> str:
-    """Turn an incoming message into a reply."""
-    t = text.strip()
-    if t.lower().startswith("audit "):
-        url = t[6:].strip()
-        from .runner import full_web_audit
-        try:
-            r = await full_web_audit(url, headless=True, max_elements=20)
-            s = r["summary"]
-            return (f"Audit of {url}: {s['score']}/100 · {s['dead_controls']} dead "
-                    f"controls · {s['a11y_issues']} a11y · {s['console_errors']} "
-                    f"console errors.")
-        except Exception as e:
-            return f"Couldn't audit {url}: {e}"
+    """Turn an incoming WhatsApp message into an action + reply — agentically.
+    Whatever you send ('audit mysite.com', 'log in and download invoices') is run
+    through the agent, which decides what to do."""
     if not config.is_configured():
-        return ("Send 'audit <url>' to test a site. (Configure a brain with "
-                "`camel setup` for free-form chat.)")
-    from .agent import provider_from_config
-    prov = provider_from_config()
-    msg = prov.chat([
-        {"role": "system", "content": "You are Camel AI, a helpful assistant that "
-         "can also test/automate software. Reply concisely for WhatsApp."},
-        {"role": "user", "content": t},
-    ], tools=[])
-    return (msg.get("content") or "").strip()[:1500] or "(no reply)"
+        return "Configure a brain first: run `camel setup`, then message me a task."
+    from .agent import provider_from_config, run_audit
+    try:
+        result = await run_audit(provider_from_config(), text.strip(),
+                                 headless=True, max_steps=8)
+        return (result or "(done)").strip()[:1500]
+    except Exception as e:  # keep the bot alive
+        return f"Sorry, that failed: {e}"
 
 
 async def run_bot(poll_seconds: int = 5, headless: bool = True) -> None:
