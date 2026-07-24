@@ -60,11 +60,17 @@ async def _run(request):
     body = await request.json()
     goal = (body.get("goal") or "").strip()
     if not goal:
-        return JSONResponse({"error": "Enter a goal"}, status_code=400)
+        return JSONResponse({"error": "Tell me what to do"}, status_code=400)
     if not config.is_configured():
-        return JSONResponse({"error": "Connect a brain first (camel setup)"}, status_code=400)
+        return JSONResponse({"error": "Connect a brain first: run `camel setup`"}, status_code=400)
+    profile = None
+    if body.get("real_browser"):
+        import os
+        profile = os.path.join(str(config.CONFIG_DIR), "browser-profile")
+        os.makedirs(profile, exist_ok=True)
     from .agent import provider_from_config, run_audit
-    text = await run_audit(provider_from_config(), goal, headless=False)
+    text = await run_audit(provider_from_config(), goal, headless=False,
+                           user_profile=profile)
     return JSONResponse({"result": text})
 
 
@@ -146,46 +152,29 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <header><span style="font-size:1.4rem">🐫</span><h1>Camel AI</h1><span class="badge" id="brain">…</span></header>
 <main>
  <div class="card">
-  <h2>Test a website</h2>
-  <input type="text" id="url" placeholder="example.com  or  your-app.com/login" value="https://example.com">
+  <h2>What do you want to do?</h2>
+  <input type="text" id="goal" placeholder="audit example.com   ·   log into my portal and download invoices   ·   test the checkout flow">
   <div class="row">
-   <button id="run">▶ Run audit</button>
+   <button id="dorun">▶ Run</button>
    <label><input type="checkbox" id="real"> Use my logged-in browser</label>
-   <span id="status" class="spin"></span>
+   <span id="runstatus" class="spin"></span>
   </div>
- </div>
- <div class="card hidden" id="result">
-  <h2>Result</h2>
-  <div><span class="score" id="score">—</span><span class="meta">/100 health</span></div>
-  <div class="meta" id="counts"></div>
-  <div id="loginwarn" class="hidden" style="color:#fbbf24;margin-top:.5rem"></div>
-  <div id="findings" style="margin-top:1rem"></div>
-  <p style="margin-top:1rem"><a id="full" href="#" target="_blank">Open full report ↗</a></p>
+  <div id="runout" class="meta" style="margin-top:.7rem;white-space:pre-wrap"></div>
+  <p class="meta">Just say it in plain English — the agent figures out whether to test, log in, click, or download.</p>
  </div>
  <div class="card">
-  <h2>Do a task (plain English)</h2>
-  <input type="text" id="goal" placeholder="log into my portal and download this month's invoices">
-  <div class="row"><button id="dorun">▶ Run task</button><span id="runstatus" class="spin"></span></div>
-  <div id="runout" class="meta" style="margin-top:.6rem;white-space:pre-wrap"></div>
- </div>
- <div class="card">
-  <h2>Scheduled jobs</h2>
+  <h2>Schedule it</h2>
   <div class="row">
-   <select id="jkind" title="what the job does">
-    <option value="audit">Audit a site</option>
-    <option value="goal">Do a task</option>
-   </select>
-   <input type="text" id="jtask" placeholder="https://mysite.com" style="flex:2;min-width:200px">
+   <input type="text" id="jtask" placeholder="what to do — e.g. audit mysite.com, or email me any broken buttons" style="flex:2;min-width:220px">
    <select id="jevery" title="how often">
     <option value="day">daily at</option>
     <option value="hour">hourly</option>
    </select>
    <input type="text" id="jat" placeholder="09:00" value="09:00" style="width:74px">
-   <button id="jadd">+ Add</button>
+   <button id="jadd">+ Schedule</button>
   </div>
-  <p class="meta" id="jhint">“Audit a site” tests a URL on a schedule. Pick “Do a task” to run a plain-English goal (needs a brain).</p>
+  <p class="meta">Same plain-English task, on a repeat. Runs while <code>camel daemon</code> is running.</p>
   <div id="joblist" style="margin-top:.7rem"></div>
-  <p class="meta">Run <code>camel daemon</code> in a terminal to execute jobs unattended.</p>
  </div>
  <div class="card">
   <h2>See what's on your screen</h2>
@@ -196,46 +185,27 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <script>
 const SEV={critical:'#dc2626',high:'#ea580c',medium:'#d97706',low:'#6b7280'};
 fetch('/api/status').then(r=>r.json()).then(s=>{document.getElementById('brain').textContent='brain: '+s.brain});
-document.getElementById('run').onclick=async()=>{
- const url=document.getElementById('url').value;
- const real=document.getElementById('real').checked;
- const st=document.getElementById('status'); st.textContent='Running… opening a browser and clicking every control';
- document.getElementById('run').disabled=true;
- try{
-  const r=await fetch('/api/audit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,real_browser:real})});
-  const d=await r.json(); if(d.error){st.textContent=d.error;return;}
-  document.getElementById('result').classList.remove('hidden');
-  document.getElementById('score').textContent=d.summary.score;
-  document.getElementById('counts').textContent=`${d.summary.tested} controls · ${d.summary.dead_controls} dead · ${d.summary.a11y_issues} a11y · ${d.summary.console_errors} console errors`;
-  const lw=document.getElementById('loginwarn');
-  if(d.login_wall){lw.classList.remove('hidden');lw.textContent='🔒 This is a login page — sign in via "Use my logged-in browser" to test the app behind it.';}else{lw.classList.add('hidden');}
-  const f=document.getElementById('findings'); f.innerHTML='';
-  (d.findings||[]).slice(0,12).forEach(x=>{const el=document.createElement('div');el.className='finding';
-   el.innerHTML=`<span class="sev" style="background:${SEV[x.severity]||'#6b7280'}">${x.id} ${x.severity.toUpperCase()}</span> <b>${x.title}</b><div class="meta">${x.suggested_fix}</div>`;f.appendChild(el);});
-  const blob=new Blob([d.html],{type:'text/html'});document.getElementById('full').href=URL.createObjectURL(blob);
-  st.textContent='Done.';
- }catch(e){st.textContent='Error: '+e;} finally{document.getElementById('run').disabled=false;}
-};
 document.getElementById('dorun').onclick=async()=>{
  const goal=document.getElementById('goal').value; const st=document.getElementById('runstatus');
- if(!goal){st.textContent='Enter a task';return;} st.textContent='Working…'; document.getElementById('dorun').disabled=true;
- try{const r=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({goal})});
+ if(!goal){st.textContent='Tell me what to do';return;}
+ st.textContent='Working… the agent is opening a browser and acting'; document.getElementById('dorun').disabled=true;
+ document.getElementById('runout').textContent='';
+ try{const r=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({goal,real_browser:document.getElementById('real').checked})});
   const d=await r.json(); document.getElementById('runout').textContent=d.error||d.result||''; st.textContent=d.error?'':'Done.';
  }catch(e){st.textContent='Error: '+e;} finally{document.getElementById('dorun').disabled=false;}
 };
 async function loadJobs(){const r=await fetch('/api/jobs');const d=await r.json();const el=document.getElementById('joblist');el.innerHTML='';
  (d.jobs||[]).forEach(j=>{const row=document.createElement('div');row.className='win';
   const when=j.every==='hour'?'hourly':('daily '+j.at);
-  row.innerHTML=`• <b>${j.id}</b> ${j.kind}: "${j.task}" — ${when} <a href="#" data-id="${j.id}" style="margin-left:.5rem">remove</a>`;
+  row.innerHTML=`• <b>${j.id}</b> "${j.task}" — ${when} <a href="#" data-id="${j.id}" style="margin-left:.5rem">remove</a>`;
   row.querySelector('a').onclick=async(e)=>{e.preventDefault();await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'remove',id:j.id})});loadJobs();};
   el.appendChild(row);});}
-const jkind=document.getElementById('jkind'), jevery=document.getElementById('jevery');
-jkind.onchange=()=>{document.getElementById('jtask').placeholder = jkind.value==='goal'
- ? 'e.g. log into my portal and email me any broken buttons' : 'https://mysite.com';};
+const jevery=document.getElementById('jevery');
 document.getElementById('jadd').onclick=async()=>{const task=document.getElementById('jtask').value;
  const at=document.getElementById('jat').value||'09:00'; if(!task)return;
  await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({action:'add',task,kind:jkind.value,every:jevery.value,at})});
+  body:JSON.stringify({action:'add',task,kind:'goal',every:jevery.value,at})});
  document.getElementById('jtask').value=''; loadJobs();};
 loadJobs();
 document.getElementById('seebtn').onclick=async()=>{

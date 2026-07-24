@@ -11,7 +11,8 @@ def test_home_serves_ui():
     r = client.get("/")
     assert r.status_code == 200
     assert "Camel AI" in r.text
-    assert "Run audit" in r.text
+    assert "What do you want to do?" in r.text     # single natural-language box
+    assert "Schedule it" in r.text
 
 
 def test_status_endpoint_shape():
