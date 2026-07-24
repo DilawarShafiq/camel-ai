@@ -45,6 +45,23 @@ TOOLS = [
         "name": "get_console_errors",
         "description": "Return console errors, page errors, failed requests.",
         "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {
+        "name": "full_audit",
+        "description": "Run a COMPLETE UI/UX audit of a page: click every control, "
+                       "find dead buttons, console errors, and accessibility issues, "
+                       "and return a health score + ranked fix list. Use this when "
+                       "the user asks to test or audit a site. Pass a url to open it "
+                       "first, or omit to audit the current page.",
+        "parameters": {"type": "object", "properties": {
+            "url": {"type": "string"}}}}},
+    {"type": "function", "function": {
+        "name": "wait_for_login",
+        "description": "Pause and let the human sign in / do 2FA in the open browser. "
+                       "Call this on a login wall instead of clicking sign-in. "
+                       "Resumes when the url contains `until_url_contains`.",
+        "parameters": {"type": "object", "properties": {
+            "message": {"type": "string"},
+            "until_url_contains": {"type": "string"}}, "required": ["message"]}}},
 ]
 
 
@@ -179,13 +196,31 @@ async def _dispatch(session: Session, name: str, args: dict) -> Any:
         return await session.audit_interactivity(args.get("max_elements", 40))
     if name == "get_console_errors":
         return session.get_console_errors()
+    if name == "full_audit":
+        if args.get("url"):
+            await session.navigate(args["url"])
+        from . import report as _r, findings as _f
+        a11y = await session.check_accessibility()
+        audit = await session.audit_interactivity(30)
+        errs = session.get_console_errors()
+        summary = {**_r.summarize(audit, errs), "a11y_issues": a11y["issue_count"]}
+        found = _f.generate(session.page.url, audit, errs, a11y)
+        return {"summary": summary, "findings": found[:10],
+                "login_wall": audit.get("login_wall", False)}
+    if name == "wait_for_login":
+        from .handoff import wait_for_human
+        return await wait_for_human(
+            session, args.get("message", "Please sign in."),
+            until_url_contains=args.get("until_url_contains") or None,
+            timeout=300)
     return {"error": f"unknown tool {name}"}
 
 
 async def run_audit(provider: LLMProvider, goal: str, *, headless: bool = False,
-                    max_steps: int = 20) -> str:
-    """Drive the browser toward `goal` using any LLM. Returns the final report."""
-    session = Session(headless=headless)
+                    max_steps: int = 20, user_profile: str | None = None) -> str:
+    """Drive the browser toward `goal` using any LLM. Returns the final report.
+    Pass `user_profile` to reuse a persistent, already-logged-in browser."""
+    session = Session(headless=headless, user_profile=user_profile)
     await session.start()
     messages: list[dict] = [
         {"role": "system", "content":
