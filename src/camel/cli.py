@@ -453,6 +453,14 @@ _SUBCOMMANDS = {"setup", "run", "audit", "doctor", "mcp-config", "server", "app"
 
 
 def main() -> None:
+    # Make console output Windows-safe: legacy code pages (cp1252) can't encode
+    # emoji / arrows and would crash on print. Degrade to replacement chars.
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
     # Agentic CLI: `camel <plain-English task>` with no known subcommand runs it
     # through the agent — e.g. `camel "audit my site"` or `camel "log in and
     # download invoices"`. No subcommand to memorize.
