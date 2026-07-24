@@ -87,6 +87,31 @@ async def _jobs(request):
     return JSONResponse({"jobs": scheduler.list_jobs()})
 
 
+async def _whatsapp(request):
+    body = await request.json()
+    action = body.get("action")
+    if action not in ("connect", "bot"):
+        return JSONResponse({"error": "unknown action"}, status_code=400)
+    import os
+    import shutil
+    import subprocess
+    import sys
+    exe = shutil.which("camel") or os.path.join(
+        os.path.expanduser("~"), ".local",
+        "bin", "camel.exe" if sys.platform == "win32" else "camel")
+    try:
+        kwargs = {}
+        if sys.platform == "win32":
+            kwargs["creationflags"] = 0x00000010  # CREATE_NEW_CONSOLE
+        subprocess.Popen([exe, "whatsapp", action], **kwargs)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    msg = ("Opening WhatsApp Web — scan the QR with your phone "
+           "(WhatsApp ▸ Linked devices)." if action == "connect"
+           else "WhatsApp responder starting — message yourself a task.")
+    return JSONResponse({"status": msg})
+
+
 async def _see(request):
     out = {"windows": [], "screen": None}
     try:
@@ -110,6 +135,7 @@ app = Starlette(routes=[
     Route("/api/audit", _audit, methods=["POST"]),
     Route("/api/run", _run, methods=["POST"]),
     Route("/api/jobs", _jobs, methods=["GET", "POST"]),
+    Route("/api/whatsapp", _whatsapp, methods=["POST"]),
     Route("/api/see", _see),
 ])
 
@@ -177,6 +203,15 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
   <div id="joblist" style="margin-top:.7rem"></div>
  </div>
  <div class="card">
+  <h2>Chat via WhatsApp <span class="meta" style="font-weight:400">· experimental</span></h2>
+  <div class="row">
+   <button class="ghost" id="waconnect">📱 Connect (scan QR)</button>
+   <button class="ghost" id="wabot">▶ Start responder</button>
+   <span id="wastatus" class="meta"></span>
+  </div>
+  <p class="meta">Connect once (scan the QR with your phone), start the responder, then message yourself a task like “audit mysite.com”.</p>
+ </div>
+ <div class="card">
   <h2>See what's on your screen</h2>
   <div class="row"><button class="ghost" id="seebtn">👁 See my windows</button><span id="screen" class="meta"></span></div>
   <div id="wins"></div>
@@ -208,6 +243,10 @@ document.getElementById('jadd').onclick=async()=>{const task=document.getElement
   body:JSON.stringify({action:'add',task,kind:'goal',every:jevery.value,at})});
  document.getElementById('jtask').value=''; loadJobs();};
 loadJobs();
+async function wa(action){const r=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
+ const d=await r.json();document.getElementById('wastatus').textContent=d.status||d.error||'';}
+document.getElementById('waconnect').onclick=()=>wa('connect');
+document.getElementById('wabot').onclick=()=>wa('bot');
 document.getElementById('seebtn').onclick=async()=>{
  const r=await fetch('/api/see');const d=await r.json();
  document.getElementById('screen').textContent=d.screen?('screen '+d.screen):'';
