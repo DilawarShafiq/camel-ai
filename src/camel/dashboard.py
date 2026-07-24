@@ -143,7 +143,7 @@ app = Starlette(routes=[
 def serve(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True) -> None:
     import uvicorn
     url = f"http://{host}:{port}"
-    print(f"\n  Camel AI dashboard → {url}\n  (Ctrl+C to stop)\n")
+    print(f"\n  Camel AI dashboard -> {url}\n  (Ctrl+C to stop)\n")
     if open_browser:
         try:
             webbrowser.open(url)
